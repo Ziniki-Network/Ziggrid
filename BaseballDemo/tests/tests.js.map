@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "file": "tests.js",
+  "sources": [
+    "tmp/transpiled/tests/unit/percentage_of_data_test.js"
+  ],
+  "names": [],
+  "mappings": "AAAA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA,K",
+  "sourcesContent": [
+    "define(\"appkit/tests/unit/percentage_of_data_test\",\n  [\"appkit/utils/percentage_of_data\"],\n  function(__dependency1__) {\n    \"use strict\";\n    var percentageOfSeason = __dependency1__.percentageOfSeason;\n    var percentageOfData = __dependency1__.percentageOfData;\n    var precision = __dependency1__.precision;\n\n    test(\"percentage of season\", function(){\n      equal(precision(0.5934065934, 100), percentageOfSeason(200, 2007));\n      equal(precision(0.043956044, 100),  percentageOfSeason(100, 2007));\n    });\n\n    test(\"percentage in data\", function(){\n      equal(percentageOfData(200, 2007), 0.09);\n      equal(percentageOfData(100, 2007), 0.00);\n      equal(percentageOfData(200, 2012), 0.91);\n      equal(percentageOfData(274, 2012), 0.98);\n    });\n\n  });"
+  ]
+}

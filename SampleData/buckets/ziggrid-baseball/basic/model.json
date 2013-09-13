@@ -1,0 +1,668 @@
+/* In JSON Format, a Ziggrid definition file is a list of definitions.
+ * Each definition is an object and its fields have "identifying characteristics" that
+ * enable the model reader to identify the definition type.
+ */
+[
+
+  /* A "plateApperance" is a basic object that represents the fact of a batter having
+   * acted on a pitch.  These are the objects which are pumped into the Ziggrid at the
+   * bottom level.
+   */
+  {
+    "name": "plateAppearance",
+    "fields": [
+      {
+        "name": "team", // The team identifier from the Retrosheet Event file
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "player", // The player identifier from the Retrosheet Event file
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season", // Year represented as YYYY
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "dayOfYear",  // 1-365, proxy for which game it was
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "inning", // 1-9 for regular innings
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "home", // true for playing at home, false for away
+        "type": "boolean",
+        "key": true
+      },
+      {
+        "name": "outs", // 0-2
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "awayScore", // number of runs scored by away team before atbat
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "homeScore", // number of runs scored by home team before atbat
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "winning", // true if this player's team ultimately won the game
+        "type": "boolean"
+      },
+      {
+        "name": "action", // what the batter did, e.g. BB, 1B, HR, G, F, P, K
+        "type": "string"
+      },
+      {
+        "name": "rbi",  // The number of runs driven in
+        "type": "number"
+      },
+      {
+        "name": "bases",  // Runners on bases before the pitch (but including any stolen bases); one of "", "1", "2", "3", "12", "23", "123"
+        "type": "string"
+      }
+    ]
+  },
+
+  /* For summarization purposes, we want to be able to break out all the cases and have each one represented by numbers
+   */ 
+  {
+    "name": "paOutcome",
+    "fields": [
+      {
+        "name": "team", // EVN id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "player", // EVN id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season", // YYYY
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "dayOfYear",  // 1-365, proxy for which game it was
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "inning", // 1-9; roll 10+ into "9"
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "atbat",
+        "type": "number",
+      },
+      {
+        "name": "hit",
+        "type": "number",
+      },
+      {
+        "name": "hitSingle",
+        "type": "number",
+      },
+      {
+        "name": "hitHR",
+        "type": "number",
+      },
+      {
+        "name": "walked",
+        "type": "number",
+      },
+      {
+        "name": "struckOut",
+        "type": "number",
+      },
+      {
+        "name": "rbi",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn1st",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn2nd",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn3rd",
+        "type": "number",
+      }
+    ]
+  },
+  {
+    "name": "playerTotals",
+    "fields": [
+      {
+        "name": "player", // EVN id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season", // YYYY
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "dayOfYear",  // 1-365, proxy for which game it was
+        "type": "number",
+        "key": true
+      },
+      {
+        "name": "plateAppearances",
+        "type": "number",
+      },
+      {
+        "name": "atbats",
+        "type": "number",
+      },
+      {
+        "name": "walks",
+        "type": "number",
+      },
+      {
+        "name": "strikeOuts",
+        "type": "number",
+      },
+      {
+        "name": "hits",
+        "type": "number",
+      },
+      {
+        "name": "hrs",
+        "type": "number",
+      },
+      {
+        "name": "rbi",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn1st",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn2nd",
+        "type": "number",
+      },
+      {
+        "name": "runnerOn3rd",
+        "type": "number",
+      }
+    ]
+  },
+  {
+    "name": "profile",
+    "key": [
+      "player/",
+      { "field": "player" }
+    ],
+    "fields": [
+      {
+        "name": "player", // player id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "fullname", // player real first name
+        "type": "string"
+      },
+      {
+        "name": "atbats",
+        "type": "number"
+      },
+      {
+        "name": "hits",
+        "type": "number"
+      },
+      {
+        "name": "walks",
+        "type": "number"
+      },
+      {
+        "name": "hrs",
+        "type": "number"
+      },
+      {
+        "name": "average",
+        "type": "number"
+      },
+      {
+        "name": "production",
+        "type": "number"
+      },
+      {
+        "name": "clutchness",
+        "type": "number"
+      },
+      {
+        "name": "hotness",
+        "type": "number"
+      },
+    ]
+  },
+  {
+    "name": "situation",
+    "fields": [
+      {
+        "name": "player", // player id
+        "type": "string"
+      },
+      {
+        "name": "season", // Year represented as YYYY
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "dayOfYear",  // 1-365, proxy for which game it was
+        "type": "number"
+      },
+      {
+        "name": "atbat", // 0-26 (or more for 10+): (zero-based inning)*3+outs
+        "type": "number",
+      },
+      {
+        "name": "bases", // bases string, just needed for distinguishing cases
+        "type": "string"
+      },
+      {
+        "name": "lead",  // -2 for more than 2 behind, -1 for 1 or 2 behind, 0 for tie, +1 for 1 or 2 ahead, +2 for more than 2 ahead
+        "type": "number"
+      },
+      {
+        "name": "action", // the simple action string
+        "type": "string"
+      },
+      {
+        "name": "gameResult", // 0(loss) or 1(win)
+        "type": "number"
+      }
+    ]
+  },
+  // games were played on this date
+  {
+    "name": "gameDate",
+    "fields": [
+      {
+        "name": "season",
+        "type": "string"
+      },
+      {
+        "name": "day",
+        "type": "number"
+      }
+    ]
+  },
+  {
+    "name": "gameResult",
+    "fields": [
+      {
+        "name": "season",
+        "type": "string"
+      },
+      {
+        "name": "day",
+        "type": "number"
+      },
+      {
+        "name": "winteam", // EVN id
+        "type": "string"
+      },
+      {
+        "name": "winruns",
+        "type": "number"
+      },
+      {
+        "name": "loseteam", // EVN id
+        "type": "string"
+      },
+      {
+        "name": "loseruns",
+        "type": "number"
+      },
+    ]
+  },
+  {
+    "name": "winLoss",
+    "fields": [
+      {
+        "name": "team", // EVN id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season",
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "wins",
+        "type": "number"
+      },
+      {
+        "name": "losses",
+        "type": "number"
+      },
+      {
+        "name": "runsFor",
+        "type": "number"
+      },
+      {
+        "name": "runsAgainst",
+        "type": "number"
+      },
+    ]
+  },
+  // enhance plateAppearance => paOutcome
+  {
+    "enhanced": "paOutcome",
+    "from": "plateAppearance",
+    "enhance": {
+      "team": "team",
+      "player": "player",
+      "season": "season",
+      "dayOfYear": "dayOfYear",
+      "inning": "inning",
+      "walked" : {
+        "op": "ifelse",
+        "test": {
+          "op": "==",
+          "lhs": "action",
+          "rhs": { "string": "BB" }
+        },
+        "true": { "number": 1 },
+        "false": { "number": 0 }
+      },
+      "hit" : {
+        "op": "ifelse",
+        "test": {
+          "op": "in",
+          "field": "action",
+          "strings": ["1B","2B","3B","HR"]
+        },
+        "true": { "number": 1 },
+        "false": { "number": 0 }
+      },
+      "atbat" : {
+        "op": "ifelse",
+        "test": {
+          "op": "in",
+          "field": "action",
+          "strings": ["1B","2B","3B","HR","G","F","P","K"]
+        },
+        "true": { "number": 1 },
+        "false": { "number": 0 }
+      },
+      "hitSingle" : {
+        "op": "ifelse",
+        "test": {
+          "op": "==",
+          "lhs": "action",
+          "rhs": { "string": "1B" }
+        },
+        "true": { "number": 1 },
+        "false": { "number": 0 }
+      },
+      "hitHR" : {
+        "op": "ifelse",
+        "test": {
+          "op": "==",
+          "lhs": "action",
+          "rhs": { "string": "HR" }
+        },
+        "true": { "number": 1 },
+        "false": { "number": 0 }
+      },
+      // ...
+      "rbi": "rbi",
+      "runnerOn1st" : {
+        "op": "stringContains",
+        "field": "bases",
+        "text": "1"
+      },
+      "runnerOn2nd" : {
+        "op": "stringContains",
+        "field": "bases",
+        "text": "2"
+      },
+      "runnerOn3rd" : {
+        "op": "stringContains",
+        "field": "bases",
+        "text": "3"
+      }         
+    }
+  },
+  {
+      "summary": "playerTotals",
+      "event": "paOutcome",
+      "match": {
+        "player": "player",
+        "season": "season",
+        "dayOfYear": "dayOfYear"
+      },
+      "reduce": {
+        "plateAppearances": {
+          "op": "++"
+        },
+        "hits": {
+          "op": "+=",
+          "field": "hit"
+        },
+        "hrs": {
+          "op": "+=",
+          "field": "hitHR"
+        },
+        "atbats": {
+          "op": "+=",
+          "field": "atbat"
+        },
+        "walks": {
+          "op": "+=",
+          "field": "walked"
+        },
+        "rbi": {
+          "op": "+=",
+          "field": "rbi"
+        },
+        "runnerOn1st": {
+          "op": "+=",
+          "field": "runnerOn1st"
+        },
+        "runnerOn2nd": {
+          "op": "+=",
+          "field": "runnerOn2nd"
+        },
+        "runnerOn3rd": {
+          "op": "+=",
+          "field": "runnerOn3rd"
+        }
+      }
+  },
+  {
+    "summary": "winLoss",
+    "event": "gameResult",
+    "match": {
+      "team": "winteam",
+      "season": "season"
+    },
+    "reduce": {
+      "wins": {
+        "op": "++"
+      },
+      "runsFor": {
+        "op": "+=",
+        "field": "winruns"
+      },
+      "runsAgainst": {
+        "op": "+=",
+        "field": "loseruns"
+      }
+    }
+  },
+  {
+    "summary": "winLoss",
+    "event": "gameResult",
+    "match": {
+      "team": "loseteam",
+      "season": "season"
+    },
+    "reduce": {
+      "losses": {
+        "op": "++"
+      },
+      "runsFor": {
+        "op": "+=",
+        "field": "loseruns"
+      },
+      "runsAgainst": {
+        "op": "+=",
+        "field": "winruns"
+      }
+    }
+  },
+  
+  /* In order to do a correlation, there must be a set of dimensional data that can be reduced.
+   * Here, that is set up in the "situation" objects, but we need to create those by enhancement.
+   * This takes the plateAppearances and creates appropriate "situation" objects
+   */
+  {
+    "enhanced": "situation",
+    "from": "plateAppearance",
+    "enhance": {
+      "player": "player",
+      "season": "season",
+      "dayOfYear": "dayOfYear",
+      "atbat": {
+        "op": "+",
+        "args": [{
+          "op": "*",
+          "args": [ 3, "inning" ]
+          },
+          "outs",
+          -3
+        ]
+      },
+      "bases": "bases",
+      "lead": {
+        "op": "group",
+        "value": {
+          "op": "ifelse",
+          "test": "home",
+          "true": { "op": "-", "lhs": "homeScore", "rhs": "awayScore" },
+          "false": { "op": "-", "lhs": "awayScore", "rhs": "homeScore" }
+        },
+        "dividers": [ -3, -1, 0, 2 ],   //  (-inf, -3], (-3, -1], (-1, 0], (0, 2],
+        "moreThan": 3                   //  (2,inf)
+      },
+      "action": "action",
+      "gameResult": {
+        "op": "ifelse",
+        "test": "winning",
+        "true": 1,
+        "false": 0
+      }
+    }
+  },
+  /* In order to identify the players with the highest impact, we look for
+   * a "correlation" between their behaviors and the ones that are most typically
+   * associated with "winning".
+   */
+  {
+    "correlate": "situation",
+    "case": ["atbat","bases","lead","action"],
+    "value": "gameResult",
+    "groupby": [ ["player" ], [ "player", "season" ], [ "player", "season", "dayOfYear" ] ]
+  },
+  {
+    "snapshot": "clutchnessSeasonToDate",
+    "from": "correlate_on_situation_groupedBy_player_season_and_dayOfYear",
+    "groupby": [ "player", "season" ],
+    "upTo": "dayOfYear",
+    "values": {
+     "correlation" : "correlation"
+    }
+  },
+  /* Calculate a decaying average over the season of the last 20 atbats.
+   * Use this to measure the current "hotness" of a hitter
+   */
+  {
+    "snapshot": "playerSeasonToDate",
+    "from": "playerTotals",
+    "groupby": [ "player", "season" ],
+    "upTo": "dayOfYear",
+    "decay": {
+      "method": "linear",
+      "expiry": 20
+    },
+    "values": {
+      "average" : {
+        "op": "/",
+        "lhs": {
+          "op": "+",
+          "args": [{
+            "op": "ifelse",
+            "test": { "op": "==", "lhs": "atbats", "rhs": 0 },
+            "true": 0,
+            "false": {
+              "op": "/",
+              "lhs": "hits",
+              "rhs": "atbats"
+            }
+          },{
+            "op": "ifelse",
+            "test": { "op": "==", "lhs": { "op": "+", "args": [ "atbats", "runnerOn2nd", "runnerOn3rd" ] }, "rhs": 0 },
+            "true": 0,
+            "false": {
+              "op": "/",
+              "lhs": "rbi",
+              "rhs": {
+                "op": "+",
+                "args": [{
+                  "op": "*",
+                  "args": [ 0.1, "atbats" ]
+                },{
+                  "op": "*",
+                  "args": [ 0.8, "runnerOn2nd" ]
+                },{   
+                  "op": "*",
+                  "args": [ 1.2, "runnerOn3rd" ]
+                }]
+              }
+            }
+          }]
+        },
+        "rhs": 2.0
+      }
+    }
+  },
+  {
+    "composeInto": "profile",
+    "from": "playerTotals-key2",
+    "key": [
+      "player/",
+      { "field": "player" }
+    ],
+    "fields": {
+      "atbats": "atbats",
+      "hits": "hits",
+      "walks": "walks",
+      "hrs": "hrs"
+    }
+  },
+]

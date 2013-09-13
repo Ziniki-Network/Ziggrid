@@ -1,0 +1,33 @@
+/* In JSON Format, a Ziggrid definition file is a list of definitions.
+ * Each definition is an object and its fields have "identifying characteristics" that
+ * enable the model reader to identify the definition type.
+ */
+[
+  {
+    "leaderboard": "hotness",
+    "from": "snapshot_playerSeasonToDate",
+    "groupby": [ [ "season", "dayOfYear" ] ],
+    "sortby": [ "average" ],
+    "order": "desc",
+    "values": [ "player" ]
+  },
+  /*
+  {
+    "index": "hotness",
+    "from": "snapshot_playerSeasonToDate",
+    "groupby": [ [ "player", "season", "dayOfYear" ] ],
+    "values": [ "average" ]
+  },
+  */
+  {
+    "composeInto": "profile",
+    "from": "snapshot_playerSeasonToDate",
+    "key": [
+      "player/",
+      { "field": "player" }
+    ],
+    "fields": {
+      "hotness": "average"
+    }
+  }
+]

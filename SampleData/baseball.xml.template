@@ -1,0 +1,6 @@
+<?xml version='1.0'?>
+
+<Config factory='org.ziggrid.generator.baseball.BaseballFactory' couchUrl='@@COUCH_URL@@' bucket='ziggrid-baseball'>
+    <Directory directory='../SampleData/retrosheet' pattern='*.EVN.csv' />
+    <Directory directory='../SampleData/retrosheet' pattern='*.EVA.csv' />
+</Config>
