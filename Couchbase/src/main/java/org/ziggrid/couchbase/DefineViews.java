@@ -1,14 +1,18 @@
 package org.ziggrid.couchbase;
 
 import java.io.File;
+import java.util.Map.Entry;
+
 import org.apache.commons.httpclient.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.model.BinaryOperation;
+import org.ziggrid.model.CorrelationDefinition;
 import org.ziggrid.model.Definition;
 import org.ziggrid.model.DoubleConstant;
 import org.ziggrid.model.Enhancement;
+import org.ziggrid.model.EnhancementDefinition;
 import org.ziggrid.model.FieldDefinition;
 import org.ziggrid.model.FieldEnhancement;
 import org.ziggrid.model.Grouping;
@@ -18,16 +22,20 @@ import org.ziggrid.model.IndexDefinition;
 import org.ziggrid.model.IntegerConstant;
 import org.ziggrid.model.LeaderboardDefinition;
 import org.ziggrid.model.ListConstant;
+import org.ziggrid.model.MatchField;
 import org.ziggrid.model.Model;
 import org.ziggrid.model.ObjectDefinition;
 import org.ziggrid.model.OpReductionWithNoFields;
 import org.ziggrid.model.OpReductionWithOneField;
 import org.ziggrid.model.Reduction;
+import org.ziggrid.model.SnapshotDefinition;
 import org.ziggrid.model.StringConstant;
 import org.ziggrid.model.StringContainsOp;
 import org.ziggrid.model.SumOperation;
+import org.ziggrid.model.SummaryDefinition;
 import org.ziggrid.parsing.ErrorHandler;
 import org.ziggrid.parsing.JsonReader;
+import org.ziggrid.parsing.ProcessingMethods;
 import org.ziggrid.utils.exceptions.UtilException;
 import org.ziggrid.utils.jsgen.AbstractForStmt;
 import org.ziggrid.utils.jsgen.IfElseStmt;
@@ -38,6 +46,7 @@ import org.ziggrid.utils.jsgen.JSParens;
 import org.ziggrid.utils.jsgen.JSValue;
 import org.ziggrid.utils.jsgen.JSVar;
 import org.ziggrid.utils.jsgen.NullExpr;
+import org.ziggrid.utils.jsgen.UseCompiler;
 import org.ziggrid.utils.jsgen.VarDecl;
 import org.ziggrid.utils.sync.SyncUtils;
 import org.ziggrid.utils.utils.FileUtils;
@@ -66,100 +75,101 @@ public class DefineViews {
 		if (eh.displayErrors())
 			return;
 		
-		new DefineViews().loadDesignDocument(eh, couchUrl + bucket + "/", model, documentName);
+		new DefineViews().loadDesignDocument(eh, couchUrl + bucket + "/", new ProcessingMethods(), model, documentName);
 	}
 	
-	
-	public void loadDesignDocument(final ErrorHandler eh, String couchUrl, Model model, String documentName) {
+	public void loadDesignDocument(final ErrorHandler eh, String couchUrl, ProcessingMethods pm, Model model, String documentName) {
 //		model.prettyPrint(new PrintWriter(System.out));
 		CouchDocument doc = new CouchDocument(documentName);
-		/* We don't need this in "by hand" mode, and it will waste valuable CPU cycles
-		for (final EnhancementDefinition e : model.enhancers(documentName)) {
-			CouchView view = doc.create(e.getViewName());
-			final ObjectDefinition fromModel = model.getModel(eh, e.from);
-			final ObjectDefinition toModel = model.getModel(eh, e.to);
-			new JSCompiler(view.needMap().getBlock()) {
-				public void compile() {
-					ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
-					ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
-					ifNEq(var("doc").member("ziggridType"), string(e.from)).yes.returnVoid();
-					JSListExpr fields = list();
-					for (Entry<String, Enhancement> f : e.fields.entrySet()) {
-						Enhancement er = f.getValue();
-						final JSExpr expr = handleSimpleEnhancementCases(this, f.getKey(), er, fromModel, toModel);
-						final JSVar myf = declareVarLike(f.getKey(), expr).getVar();
-						if (expr instanceof NullExpr)
-							handleComplexEnhancementCases(eh, e, this, f.getKey(), er, fromModel, toModel, myf);
-						fields.add(myf);
-					}
-					voidFunction("emit", binop("+", string(e.to + "_from_"), var("doc").member("id")), fields);
-				}
-			};
-		}
-		for (final SummaryDefinition s : model.summaries(documentName)) {
-			final CouchView view = doc.create(s.getViewName());
-			new JSCompiler(view.needMap().getBlock()) {
-				public void compile() {
-					ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
-					ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
-					ifNEq(var("doc").member("ziggridType"), string(s.event)).yes.returnVoid();
-
-					// build a key
-					JSListExpr key = list();
-					for (MatchField f : s.matches) {
-						key.add(var("doc").member(f.eventField));
-					}
-
-					JSListExpr value = list();
-					for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
-
-						// build a value
-						Reduction rr = r.getValue();
-						final JSExpr expr = handleSimpleReductionCases(this, rr);
-						if (expr instanceof NullExpr)
-							throw new UtilException("Complex Case not handled " + rr);
-						value.add(expr);
-					}
-					voidFunction("emit", key, value);
-				}
-			};
-
-			new JSCompiler(view.needReduce().getBlock()) {
-				public void compile() {
-//					JSVar key = var("key");
-					JSVar values = var("values");
-					final JSVar rereduce = var("rereduce");
-					JSListExpr init = list();
-					for (final Entry<String, Reduction> r : s.reductions.entrySet())
-						init.add(initialFor(r.getValue()));
-					final JSVar ret = declareVarLike("ret", init).getVar();
-					final AbstractForStmt loop = arrayIterator("row", values);
-					new JSCompiler(loop.nestedBlock()) {
-						public void compile() {
-							ifFalsy(rereduce).new YesNo() {
-								// The basic case
-								public void yes() {
-									int idx = 0;
-									for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
-										doReductionFor(this, ret, loop.getLoopVar(), r.getValue(), idx++);
-									}									
-								}
-
-								// The re-reduce case
-								public void no() {
-									int idx = 0;
-									for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
-										doReductionFor(this, ret, loop.getLoopVar(), r.getValue(), idx++);
-									}									
-								}
-							};
+		if (pm.enhanceWithView) {
+			for (final EnhancementDefinition e : model.enhancers(documentName)) {
+				CouchView view = doc.create(e.getViewName());
+				final ObjectDefinition fromModel = model.getModel(eh, e.from);
+				final ObjectDefinition toModel = model.getModel(eh, e.to);
+				new JSCompiler(view.needMap().getBlock()) {
+					public void compile() {
+						ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
+						ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
+						ifNEq(var("doc").member("ziggridType"), string(e.from)).yes.returnVoid();
+						JSListExpr fields = list();
+						for (Entry<String, Enhancement> f : e.fields.entrySet()) {
+							Enhancement er = f.getValue();
+							final JSExpr expr = handleSimpleEnhancementCases(this, f.getKey(), er, fromModel, toModel);
+							final JSVar myf = declareVarLike(f.getKey(), expr).getVar();
+							if (expr instanceof NullExpr)
+								handleComplexEnhancementCases(eh, e, this, f.getKey(), er, fromModel, toModel, myf);
+							fields.add(myf);
 						}
-					};
-					returnValue(ret);
-				}
-			};
+						voidFunction("emit", binop("+", string(e.to + "_from_"), var("doc").member("id")), fields);
+					}
+				};
+			}
 		}
-		*/
+		if (pm.summarizeWithView) {
+			for (final SummaryDefinition s : model.summaries(documentName)) {
+				final CouchView view = doc.create(s.getViewName());
+				new JSCompiler(view.needMap().getBlock()) {
+					public void compile() {
+						ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
+						ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
+						ifNEq(var("doc").member("ziggridType"), string(s.event)).yes.returnVoid();
+
+						// build a key
+						JSListExpr key = list();
+						for (MatchField f : s.matches) {
+							key.add(var("doc").member(f.eventField));
+						}
+
+						JSListExpr value = list();
+						for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
+
+							// build a value
+							Reduction rr = r.getValue();
+							final JSExpr expr = handleSimpleReductionCases(this, rr);
+							if (expr instanceof NullExpr)
+								throw new UtilException("Complex Case not handled " + rr);
+							value.add(expr);
+						}
+						voidFunction("emit", key, value);
+					}
+				};
+
+				new JSCompiler(view.needReduce().getBlock()) {
+					public void compile() {
+						//					JSVar key = var("key");
+						JSVar values = var("values");
+						final JSVar rereduce = var("rereduce");
+						JSListExpr init = list();
+						for (final Entry<String, Reduction> r : s.reductions.entrySet())
+							init.add(initialFor(r.getValue()));
+						final JSVar ret = declareVarLike("ret", init).getVar();
+						final AbstractForStmt loop = arrayIterator("row", values);
+						new JSCompiler(loop.nestedBlock()) {
+							public void compile() {
+								ifFalsy(rereduce).new YesNo() {
+									// The basic case
+									public void yes() {
+										int idx = 0;
+										for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
+											doReductionFor(this, ret, loop.getLoopVar(), r.getValue(), idx++);
+										}									
+									}
+
+									// The re-reduce case
+									public void no() {
+										int idx = 0;
+										for (final Entry<String, Reduction> r : s.reductions.entrySet()) {
+											doReductionFor(this, ret, loop.getLoopVar(), r.getValue(), idx++);
+										}									
+									}
+								};
+							}
+						};
+						returnValue(ret);
+					}
+				};
+			}
+		}
 		for (final LeaderboardDefinition l : model.leaderboards(documentName)) {
 			for (final Grouping g : l.groupings()) {
 				final Grouping grouping = g;
@@ -204,86 +214,88 @@ public class DefineViews {
 				view.reduceCount();
 			}
 		}
-		/* Not in "Local" mode
-		for (final CorrelationDefinition cd : model.correlations(documentName)) {
-			// 1. Define the "global correlation"
-			{
-				CouchView view = doc.create(cd.getGlobalViewName());
-				new JSCompiler(view.needMap().getBlock()) {
-					public void compile() {
-						ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
-						ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
-						ifNEq(var("doc").member("ziggridType"), string(cd.from)).yes.returnVoid();
-						JSListExpr key = list();
-						for (Enhancement f : cd.items) {
-							JSExpr expr = doEnhancement(eh, cd, this, f);
-							key.add(expr);
+		if (pm.correlateWithView) {
+			for (final CorrelationDefinition cd : model.correlations(documentName)) {
+				// 1. Define the "global correlation"
+				{
+					CouchView view = doc.create(cd.getGlobalViewName());
+					new JSCompiler(view.needMap().getBlock()) {
+						public void compile() {
+							ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
+							ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
+							ifNEq(var("doc").member("ziggridType"), string(cd.from)).yes.returnVoid();
+							JSListExpr key = list();
+							for (Enhancement f : cd.items) {
+								JSExpr expr = doEnhancement(eh, cd, this, f);
+								key.add(expr);
+							}
+							voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
 						}
-						voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
-					}
-				};
-				view.reduceStats();
-			}
-			
-			// 2. Now define grouped correlations
-			for (final Grouping g : cd.groupings()) {
-				final Grouping grouping = g;
-				CouchView view = doc.create(cd.getViewName(grouping));
-				new JSCompiler(view.needMap().getBlock()) {
-					public void compile() {
-						ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
-						ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
-						ifNEq(var("doc").member("ziggridType"), string(cd.from)).yes.returnVoid();
-	
-						JSListExpr key = list();
-						for (String f : grouping.fields) {
-							key.add(var("doc").member(f));
-						}
-						for (Enhancement f : cd.items) {
-							JSExpr expr = doEnhancement(eh, cd, this, f);
-							key.add(expr);
-						}
-						voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
-					}
-				};
-				view.reduceStats();
-			}
-		}
-		for (final SnapshotDefinition sd : model.snapshots(documentName)) {
-			CouchView view = doc.create(sd.getViewName());
-			new JSCompiler(view.needMap().getBlock()) {
-				public void compile() {
-					ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
-					ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
-					ifNEq(var("doc").member("ziggridType"), string(sd.from)).yes.returnVoid();
-
-					/*
-					// Apply any filters before generating row in result view
-					for (Enhancement f : sd.filters) {
-						JSExpr expr = doEnhancement(eh, sd, this, f);
-						ifFalsy(expr).yes.returnVoid();
-					}
-					* /
-					
-					// build a key
-					JSListExpr key = list();
-					for (Enhancement f : sd.group) {
-						JSExpr expr = doEnhancement(eh, sd, this, f);
-						key.add(expr);
-					}
-					key.add(doEnhancement(eh, sd, this, sd.upTo));
-
-					// build a value
-					JSListExpr value = list();
-					for (Enhancement v : sd.values) {
-						value.add(doEnhancement(eh, sd, this, v));
-					}
-					voidFunction("emit", key, value);
+					};
+					view.reduceStats();
 				}
-			};
-			view.reduceCount();
+
+				// 2. Now define grouped correlations
+				for (final Grouping g : cd.groupings()) {
+					final Grouping grouping = g;
+					CouchView view = doc.create(cd.getViewName(grouping));
+					new JSCompiler(view.needMap().getBlock()) {
+						public void compile() {
+							ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
+							ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
+							ifNEq(var("doc").member("ziggridType"), string(cd.from)).yes.returnVoid();
+
+							JSListExpr key = list();
+							for (String f : grouping.fields) {
+								key.add(var("doc").member(f));
+							}
+							for (Enhancement f : cd.items) {
+								JSExpr expr = doEnhancement(eh, cd, this, f);
+								key.add(expr);
+							}
+							voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
+						}
+					};
+					view.reduceStats();
+				}
+			}
 		}
-		*/
+		if (pm.snapshotWithView) {
+			for (final SnapshotDefinition sd : model.snapshots(documentName)) {
+				CouchView view = doc.create(sd.getViewName());
+				new JSCompiler(view.needMap().getBlock()) {
+					public void compile() {
+						ifNEq(var("meta").member("type"), string("json")).yes.returnVoid();
+						ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
+						ifNEq(var("doc").member("ziggridType"), string(sd.from)).yes.returnVoid();
+
+						/*
+						// Apply any filters before generating row in result view
+						for (Enhancement f : sd.filters) {
+							JSExpr expr = doEnhancement(eh, sd, this, f);
+							ifFalsy(expr).yes.returnVoid();
+						}
+						 */
+
+						// build a key
+						JSListExpr key = list();
+						for (Enhancement f : sd.group) {
+							JSExpr expr = doEnhancement(eh, sd, this, f);
+							key.add(expr);
+						}
+						key.add(doEnhancement(eh, sd, this, sd.upTo));
+
+						// build a value
+						JSListExpr value = list();
+						for (Enhancement v : sd.values) {
+							value.add(doEnhancement(eh, sd, this, v));
+						}
+						voidFunction("emit", key, value);
+					}
+				};
+				view.reduceCount();
+			}
+		}
 		for (final IndexDefinition id : model.indices(documentName)) {
 			for (final Grouping g : id.groupings()) {
 				final Grouping grouping = g;
@@ -513,7 +525,6 @@ public class DefineViews {
 			return new NullExpr();
 	}
 
-	/*
 	private JSExpr initialFor(Reduction reduction) {
 		if (reduction instanceof OpReductionWithOneField) {
 			String op = ((OpReductionWithOneField) reduction).op;
@@ -554,5 +565,4 @@ public class DefineViews {
 			}
 		};
 	}
-	*/
 }

@@ -151,7 +151,7 @@ public class SnapshotViewProcessor implements ViewProcessor {
 
 	@Override
 	public String toString() {
-		return "Snapshot of " + sd.from;
+		return "View Snapshot of " + sd.from;
 	}
 
 	public String toThreadName() {

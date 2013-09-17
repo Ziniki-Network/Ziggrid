@@ -28,6 +28,7 @@ import org.ziggrid.model.ObjectDefinition;
 import org.ziggrid.model.SnapshotDefinition;
 import org.ziggrid.model.SummaryDefinition;
 import org.ziggrid.parsing.ErrorHandler;
+import org.ziggrid.parsing.ProcessingMethods;
 import org.ziggrid.taptomq.TapDataPacket;
 import org.ziggrid.utils.collections.ListMap;
 import org.ziggrid.utils.exceptions.UtilException;
@@ -74,18 +75,21 @@ public class Observer implements BucketDelayLine.Processor<ViewProcessor, Object
 	private int now = 0;
 	private final ListMap<Integer, FutureDelivery> futures = new ListMap<Integer, FutureDelivery>();
 	private final TreeMap<String, Integer> record = new TreeMap<String, Integer>();
+	private final ProcessingMethods pm;
 
 	public Observer(String couchUrl, String bucket, Model model, MessageSource messageSource) {
 		this.couchUrl = couchUrl;
 		this.bucket = bucket;
+		this.pm = new ProcessingMethods();
 		this.model = model;
 		this.messageSources.add(messageSource);
 		this.gateLength = 0;
 	}
 
-	public Observer(String couchUrl, String bucket, Model model, Collection<MessageSource> sources, int gateLength, TreeMap<String, Integer> gating) {
+	public Observer(String couchUrl, String bucket, ProcessingMethods pm, Model model, Collection<MessageSource> sources, int gateLength, TreeMap<String, Integer> gating) {
 		this.couchUrl = couchUrl;
 		this.bucket = bucket;
+		this.pm = pm;
 		this.model = model;
 		this.messageSources.addAll(sources);
 		this.gateLength = gateLength;
@@ -122,7 +126,7 @@ public class Observer implements BucketDelayLine.Processor<ViewProcessor, Object
 				DefineViews loader = new DefineViews();
 				ErrorHandler eh = new ErrorHandler();
 				for (String doc : documentsToLoad) {
-					loader.loadDesignDocument(eh, couchUrl + "couchBase/" + bucket, model, doc);
+					loader.loadDesignDocument(eh, couchUrl + "couchBase/" + bucket, pm, model, doc);
 					config.put(doc, model.getSHA(doc));
 				}
 				if (eh.displayErrors())
@@ -179,10 +183,22 @@ public class Observer implements BucketDelayLine.Processor<ViewProcessor, Object
 	public void createProcessors() {
 		for (String documentName : model.documents()) {
 			for (EnhancementDefinition eh : model.enhancers(documentName)) {
-				processors.add(eh.from, new EnhancementLocalProcessor(materializer, eh));
+				if (pm.enhanceWithView)
+					processors.add(eh.from, new EnhancementViewProcessor(new CouchQuery(conn, documentName, eh.getViewName()), materializer, eh));
+				else
+					processors.add(eh.from, new EnhancementLocalProcessor(materializer, eh));
 			}
 			for (SummaryDefinition sh : model.summaries(documentName)) {
-				processors.add(sh.event, new SummaryLocalProcessor(conn, model, materializer, sh, summaryProcessorWorkerCount));
+				if (pm.summarizeWithView) {
+					if (sh.trailblazer()) {
+						List<SummaryDefinition> summaries = model.getSummaries(sh.summary, sh.event);
+                        List<SummaryQuery> queries = new ArrayList<SummaryQuery>();
+                        for (SummaryDefinition is : summaries)
+                            queries.add(new SummaryQuery(is, new CouchQuery(conn, documentName, is.getViewName())));
+                        processors.add(sh.event, new SummaryViewProcessor(queries, materializer, summaryProcessorWorkerCount));
+					}
+				} else
+					processors.add(sh.event, new SummaryLocalProcessor(conn, model, materializer, sh, summaryProcessorWorkerCount));
 			}
 			for (LeaderboardDefinition lh : model.leaderboards(documentName)) {
 				for (Grouping grp : lh.groupings()) {
@@ -192,13 +208,22 @@ public class Observer implements BucketDelayLine.Processor<ViewProcessor, Object
 			}
 			for (CorrelationDefinition cd : model.correlations(documentName)) {
 				for (Grouping grp : cd.groupings()) {
-					// The two integers here are "pool size" (i.e. number of nodes) and "pool id" (i.e. my place) on scale 1-size.
-					CorrelationLocalProcessor proc = new CorrelationLocalProcessor(conn, materializer, cd, grp, 1, 1);
+					ViewProcessor proc;
+					if (pm.correlateWithView)
+						proc = new CorrelationViewProcessor(new CouchQuery(conn, documentName, cd.getGlobalViewName()), new CouchQuery(conn, documentName, cd.getViewName(grp)), materializer, cd, grp);
+					else {
+						// The two integers here are "pool size" (i.e. number of nodes) and "pool id" (i.e. my place) on scale 1-size.
+						proc = new CorrelationLocalProcessor(conn, materializer, cd, grp, 1, 1);
+					}
 					processors.add(cd.from, proc);
 				}
 			}
 			for (SnapshotDefinition sd : model.snapshots(documentName)) {
-				SnapshotLocalProcessor proc = new SnapshotLocalProcessor(conn, materializer, sd);
+				ViewProcessor proc;
+				if (pm.snapshotWithView)
+					proc = new SnapshotViewProcessor(new CouchQuery(conn, documentName, sd.getViewName()), materializer, sd);
+				else
+					proc = new SnapshotLocalProcessor(conn, materializer, sd);
 				processors.add(sd.from, proc);
 			}
 			for (CompositeDefinition cd : model.composites(documentName)) {

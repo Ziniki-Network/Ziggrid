@@ -1,12 +1,9 @@
 package org.ziggrid.driver;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import org.codehaus.jettison.json.JSONArray;
@@ -17,10 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.model.MatchField;
 import org.ziggrid.model.SummaryDefinition;
-import org.ziggrid.utils.collections.ListMap;
 import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-import org.ziggrid.utils.utils.DateUtils;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -28,29 +22,21 @@ import com.couchbase.client.protocol.views.Query;
 import com.couchbase.client.protocol.views.Stale;
 import com.couchbase.client.protocol.views.ViewResponse;
 import com.couchbase.client.protocol.views.ViewRow;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import java.util.concurrent.ExecutorService;
 
 /** This is the version of the SummaryProcessor that uses the Couchbase View
  * Infrastructure, but it is just too slow.
- * 
- * Also, it is out of date and has some leakage from the LocalProcessor in it.
  */
 public class SummaryViewProcessor implements ViewProcessor {
 	private final Logger logger;
 	private final List<SummaryQuery> queries;
 	private final MaterializeObjects materializer;
 	private int workerCount;
-	private ListeningExecutorService fixedThreadPool;
+	private ExecutorService fixedThreadPool;
 	private final SummaryDefinition trailblazer;
 	private final List<String> valueFields;
-	// Object here is the "summary key" and the list is of JSONObjects that match that key
-	// Not all reduction rules may match the key
-	private final ListMap<List<Object>, JSONObject> allEntries = new ListMap<List<Object>, JSONObject>();
-	// This is a list of keys in FIFO order
-	private final LinkedHashSet<List<Object>> linkedKeys = new LinkedHashSet<List<Object>>();
+	private int gaugeValue;
+	protected final Object gaugeLock = new Object();
 
 	private class SummaryWorker implements Runnable {
 
@@ -66,7 +52,14 @@ public class SummaryViewProcessor implements ViewProcessor {
 		
 		@Override
 		public void run() {
-			doProcessing(keys, firstKey, lastKey);
+			try {
+				doProcessing(keys, firstKey, lastKey);
+			} catch (Throwable t) {
+				logger.error("Error encountered doing summary", t);
+			}
+			synchronized (gaugeLock) {
+				gaugeValue -= (lastKey-firstKey);
+			}
 		}
 	}
 
@@ -74,7 +67,7 @@ public class SummaryViewProcessor implements ViewProcessor {
 		this.queries = queries;
 		this.materializer = materializer;
 		this.workerCount = workerCount;
-		fixedThreadPool = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(workerCount));
+		fixedThreadPool = Executors.newFixedThreadPool(workerCount);
 		trailblazer = queries.get(0).defn;
 		String lname = "SummaryProcessor " + trailblazer.getViewName();
 		this.logger = LoggerFactory.getLogger(lname);
@@ -105,72 +98,42 @@ public class SummaryViewProcessor implements ViewProcessor {
 	
 	@Override
 	public void run() {
-		while (true) {
-			List<Object> key;
-			List<JSONObject> entries;
-			synchronized (allEntries) {
-				while (allEntries.isEmpty())
-					SyncUtils.waitFor(allEntries, 0);
-				key = linkedKeys.iterator().next();
-				linkedKeys.remove(key);
-				entries = allEntries.removeAll(key);
-			}
-//			processWithViews(keys);
-		}
+		// We delegated all our work to the fixedThreadPool, so we can relax :-)
 	}
 	
 	@Override
 	public void spill(Set<Object> keys) {
-		throw new ZiggridException("Cannot process using views");
-		// TODO: make this work with threading
-//		processWithViews(keys);
+		processWithViews(keys);
 	}
 	
-	@SuppressWarnings({ "unchecked", "unused" })
+	@SuppressWarnings({ "unchecked" })
 	private void processWithViews(Set<Object> keys) {
 		List<List<Object>> overList = new ArrayList<List<Object>>();
 		for (Object o : keys)
 			overList.add((List<Object>) o);
-		Date from = new Date();
-		List<ListenableFuture<?>> dispatchSummaryWorkers = dispatchSummaryWorkers(overList);
-		try {
-			Futures.successfulAsList(dispatchSummaryWorkers).get();
-		} catch (InterruptedException e) {
-			logger.error("Interrupted while waiting for SummaryProcessing workers", e);
-		} catch (ExecutionException e) {
-			logger.error("ExecutionException while waiting for SummaryProcessing workers", e);
+		synchronized (gaugeLock) {
+			gaugeValue += overList.size();
 		}
-		logger.info("Summary processing took " + DateUtils.elapsedTime(from, new Date(), DateUtils.Format.sss3) + " for " + overList.size() + " keys");
+		dispatchSummaryWorkers(overList);
 	}
 
-	private List<ListenableFuture<?>> dispatchSummaryWorkers(List<List<Object>> overList) {
-		List<ListenableFuture<?>> taskFutures = new ArrayList<ListenableFuture<?>>();
-		
+	private void dispatchSummaryWorkers(List<List<Object>> overList) {
 		int itemCount = overList.size();
 		int itemsPerWorker = itemCount / workerCount;
 		int leftOvers = itemCount % workerCount;
 		int startIndex = 0;
-		int endIndex = itemCount - 1;
-
-		int currentStartIndex = startIndex;
-		int currentEndIndex = startIndex + itemsPerWorker - 1;
 
 		for (int i = 0; i < workerCount; i++) {
-			if (i < leftOvers)
-				currentEndIndex++;
-			taskFutures.add(fixedThreadPool.submit(new SummaryWorker(overList, currentStartIndex, currentEndIndex)));
-			if (currentEndIndex == endIndex)
-				return taskFutures;
-			else {
-				currentStartIndex = currentEndIndex + 1;
-				currentEndIndex = Math.min(currentEndIndex + itemsPerWorker, endIndex);
-			}
+			if (startIndex >= itemCount)
+				break;
+			int endIndex = Math.min(startIndex + itemsPerWorker +  (i < leftOvers? 1: 0), itemCount);
+			fixedThreadPool.submit(new SummaryWorker(overList, startIndex, endIndex));
+			startIndex = endIndex;
 		}
-		return taskFutures;
 	}
 
 	public void doProcessing(List<List<Object>> keys, int firstKey, int lastKey) {
-		logger.info("looking at keys = " + keys.subList(firstKey, lastKey));
+		logger.info("Processing keys; size = " + keys.size() + " from " + firstKey + " until " + lastKey + ": " + keys.subList(firstKey, lastKey));
 		for (int i=firstKey;i<lastKey;i++) {
 			List<Object> k = keys.get(i);
 			logger.debug("Reading summary entry for " + k);
@@ -194,7 +157,9 @@ public class SummaryViewProcessor implements ViewProcessor {
 				TreeMap<String, Object> values = new TreeMap<String, Object>();
 				for (SummaryQuery sq : queries) {
 					ViewResponse response = sq.query.query(q);
-					if (response.size() != 1)
+					if (response.size() == 0)
+						continue;
+					else if (response.size() != 1)
 						throw new ZiggridException("You didn't think about this enough " + response);
 					for (ViewRow row : response) {
 						try {
@@ -221,6 +186,8 @@ public class SummaryViewProcessor implements ViewProcessor {
 						}
 					}
 				}
+				if (key == null)
+					continue;
 				String id = materializer.computeSHAId(storeType, key);
 				logger.debug("Need to combine values for key " + key + " into " + values);
 				JSONArray value = new JSONArray();
@@ -239,7 +206,7 @@ public class SummaryViewProcessor implements ViewProcessor {
 	
 	@Override
 	public String toString() {
-		return "Summarizing to " + trailblazer.summary + " from " + trailblazer.event;
+		return "View Summarizing to " + trailblazer.summary + " from " + trailblazer.event;
 	}
 	
 	
@@ -253,8 +220,8 @@ public class SummaryViewProcessor implements ViewProcessor {
                 new Gauge<Integer>() {
 		            @Override
 		            public Integer getValue() {
-		            	synchronized (allEntries) {
-		            		return allEntries.totalSize();
+		            	synchronized (gaugeLock) {
+		            		return gaugeValue;
 		            	}
 		            }
 		        });

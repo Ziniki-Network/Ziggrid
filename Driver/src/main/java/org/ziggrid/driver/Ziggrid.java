@@ -22,13 +22,13 @@ import org.ziggrid.model.SnapshotDefinition;
 import org.ziggrid.model.SummaryDefinition;
 import org.ziggrid.parsing.ErrorHandler;
 import org.ziggrid.parsing.JsonReader;
+import org.ziggrid.parsing.ProcessingMethods;
 import org.ziggrid.utils.collections.CollectionUtils;
 import org.ziggrid.utils.collections.SetMap;
 import org.ziggrid.utils.metrics.CodeHaleMetrics;
 import org.ziggrid.utils.reflection.Reflection;
 import org.ziggrid.utils.utils.FileUtils;
 import org.ziggrid.utils.utils.PrettyPrinter;
-
 
 public class Ziggrid {
 	private static final int metricSamplingFreq = 10;
@@ -39,13 +39,16 @@ public class Ziggrid {
 
 	public static void main(String[] args) {
         if (args.length < 3) {
-			System.err.println("Usage: ziggrid couchUrl config [--connector class options ...]");
+			System.err.println("Usage: ziggrid couchUrl config [options] [--connector class options ...]");
 			System.err.println("  known connectors include:");
 			System.err.println("    org.ziggrid.driver.WebServer - for communicating with browsers");
 			System.err.println("    org.ziggrid.driver.TapServer - for reading Tap information from Couchbase");
 			System.err.println("    org.ziggrid.driver.MQServer  - for reading distributed Tap information from an intermediate MQ server");
 			System.err.println("  see each class javadoc for available options");
 			System.err.println("  at least one connector providing Tap information must be provided");
+			System.err.println("  Other options include:");
+			System.err.println("    --metricsDir dir    - a directory to store metrics");
+			System.err.println("    --useView processor - use view for <processor>");
 			System.exit(1);
 		}
 		String couchUrl = args[0];
@@ -55,25 +58,38 @@ public class Ziggrid {
 			System.exit(1);
 		}
 
+		ProcessingMethods pm = new ProcessingMethods();
 		int connectorArgumentsFrom = 2;
 		
-		if (args[2].equals("--metricsDir"))
-		{
-			if (args.length < 4)
+		while (true) {
+			if (args[connectorArgumentsFrom].equals("--metricsDir"))
 			{
-				System.err.println("--metricsDir needs a directory argument");
-				System.exit(1);
+				if (args.length < connectorArgumentsFrom+2)
+				{
+					System.err.println("--metricsDir needs a directory argument");
+					System.exit(1);
+				}
+
+				String metricsDir = args[connectorArgumentsFrom+1];
+
+				File dir = new File(metricsDir);
+				if(!dir.isDirectory()) {
+					System.err.println("The directory \"" + metricsDir + "\" is not a directory or does not exist.");
+					System.exit(1);
+				}
+				connectorArgumentsFrom+=2;
+				CodeHaleMetrics.configureReports(metricsDir, metricSamplingFreq);
 			}
-			
-			String metricsDir = args[3];
-			
-			File dir = new File(metricsDir);
-			if(!dir.isDirectory()) {
-				System.err.println("The directory \"" + metricsDir + "\" is not a directory or does not exist.");
-				System.exit(1);
-			}
-			connectorArgumentsFrom+=2;
-			CodeHaleMetrics.configureReports(metricsDir, metricSamplingFreq);
+			else if (args[connectorArgumentsFrom].equals("--useView")) {
+				try {
+					pm.useView(args[connectorArgumentsFrom+1]);
+					connectorArgumentsFrom+=2;
+				} catch (Exception ex) {
+					System.err.println(ex.getMessage());
+					System.exit(1);
+				}
+			} else
+				break;
 		}
 		
 		List<ConnectorSpec> connectors = new ArrayList<ConnectorSpec>();
@@ -173,7 +189,7 @@ public class Ziggrid {
 						continue;
 					}
 						 
-					Observer observer = new Observer(couchUrl, bucket, model, sources, max, gating);
+					Observer observer = new Observer(couchUrl, bucket, pm, model, sources, max, gating);
 					
 					observers.add(observer);
 					observer.createViews();

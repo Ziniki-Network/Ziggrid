@@ -152,11 +152,12 @@ public class CorrelationViewProcessor implements ViewProcessor {
 			ViewResponse resp = corrQuery.query(q);
 			try {
 				Map<String, double[]> me = new HashMap<String, double[]>();
+				String meKey = start.toString();
 				for (ViewRow r : resp) {
 					JSONObject stats = new JSONObject(r.getValue());
-					me.put(r.getKey(), new double[] { stats.getDouble("sum"), stats.getDouble("count") });
+					me.put("["+r.getKey().substring(meKey.length()), new double[] { stats.getDouble("sum"), stats.getDouble("count") });
 				}
-				materializer.materializeCorrelationObject(cd, corrQuery.getViewName(), global, grouping, start.toString(), me);
+				materializer.materializeCorrelationObject(cd, corrQuery.getViewName(), global, grouping, meKey, me);
 			} catch (JSONException ex) {
 				logger.error(ex.getMessage());
 			}
@@ -172,7 +173,7 @@ public class CorrelationViewProcessor implements ViewProcessor {
 	
 	@Override
 	public String toString() {
-		return "Correlating " + cd.name + " from " + cd.from;
+		return "View Correlating " + cd.name + " from " + cd.from;
 	}
 
 	public String toThreadName() {

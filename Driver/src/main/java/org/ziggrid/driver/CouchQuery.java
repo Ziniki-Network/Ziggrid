@@ -13,6 +13,7 @@ import org.ziggrid.utils.utils.DateUtils;
 import com.couchbase.client.CouchbaseClient;
 import com.couchbase.client.protocol.views.Query;
 import com.couchbase.client.protocol.views.RowError;
+import com.couchbase.client.protocol.views.Stale;
 import com.couchbase.client.protocol.views.View;
 import com.couchbase.client.protocol.views.ViewResponse;
 import com.couchbase.client.protocol.views.ViewResponseNoDocs;
@@ -29,20 +30,15 @@ public class CouchQuery {
 	}
 	
 	/** Bump is supposed to ensure that the views are updated.
-	 * 
-	 * Between the amount of data that is flowing, and the amount of problems we are having with Couchbase queries timing out,
-	 * I'm deprecating this for now.
 	 */
 	public void bump() {
 		if (view == null)
 			return;
-		/*
 		Query q = new Query();
 		q.setLimit(0);
 		q.setStale(Stale.UPDATE_AFTER);
 		logger.debug("Forcing view update for " + view.getViewName());
 		query(q);
-		*/
 	}
 
 	public ViewResponse query(final Query q) {
