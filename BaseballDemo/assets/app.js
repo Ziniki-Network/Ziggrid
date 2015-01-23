@@ -41,8 +41,8 @@ define("appkit/adapter",
     return Adapter;
   });
 define("appkit/app",
-  ["appkit/utils/percentage_of_data","resolver","appkit/store","appkit/ziggrid/demux","appkit/models/player","appkit/initializers/watcher","appkit/initializers/csv","appkit/initializers/connection_manager","appkit/routes","appkit/components/bean-production","appkit/components/bean-leaderboard","appkit/components/bean-homeruns"],
-  function(__dependency1__, Resolver, Store, demux, Player, watcherInitializer, csvInitializer, connectionManagerInitializer, routes, BeanProduct, BeanLeaderboard, BeanHomeruns) {
+  ["appkit/utils/percentage_of_data","resolver","appkit/store","appkit/ziggrid/demux","appkit/models/player","appkit/initializers/watcher","appkit/initializers/csv","appkit/initializers/connection_manager","appkit/components/bean-production","appkit/components/bean-leaderboard","appkit/components/bean-homeruns"],
+  function(__dependency1__, Resolver, Store, demux, Player, watcherInitializer, csvInitializer, connectionManagerInitializer, BeanProduct, BeanLeaderboard, BeanHomeruns) {
     "use strict";
     var precision = __dependency1__.precision;
 
@@ -69,7 +69,6 @@ define("appkit/app",
     App.initializer(connectionManagerInitializer);
 
     App = App.create();
-    App.Router.map(routes); // TODO: just resolve the router
     App.deferReadiness(); // defering to allow sync boot with Ziggrid
 
     function round(val) {
@@ -151,7 +150,10 @@ define("appkit/components/bean-player-profile",
 
     var PlayerProfile = Ember.Component.extend({
       player: null,
-
+      init: function () {
+        this.connectionManager = this.container.lookup('connection_manager:main'); // inject
+        this._super();
+      },
       players: function() {
         var Player = this.container.lookupFactory('model:player');
         var allStars = Ember.get(Player, 'allStars');
@@ -185,7 +187,6 @@ define("appkit/components/bean-player-profile",
       profile: null,
 
       watchProfile: function() {
-
         var handle = ++demux.lastId;
 
         this.set('watchHandle', handle);
@@ -206,18 +207,17 @@ define("appkit/components/bean-player-profile",
 
         // Send the JSON message to the server to begin observing.
         var stringified = JSON.stringify(query);
-        getConnectionManager().send(stringified);
+        this.connectionManager.send(stringified);
       },
 
       unwatchProfile: function() {
-
         var watchHandle = this.get('watchHandle');
 
         if (!watchHandle) {
           throw new Error('No handle to unwatch');
         }
 
-        getConnectionManager().send(JSON.stringify({
+        this.connectionManager.send(JSON.stringify({
           unwatch: watchHandle
         }));
 
@@ -246,11 +246,6 @@ define("appkit/components/bean-player-profile",
       }.on('didInsertElement')
     });
 
-    // TODO: inject
-    function getConnectionManager() {
-      return window.App.__container__.lookup('connection_manager:main');
-    }
-
 
     return PlayerProfile;
   });
@@ -276,7 +271,7 @@ define("appkit/components/bean-player",
       nubProgress: function(key, val) {
         if (arguments.length === 2) {
           // Setter. Gets called when user grabs the nub.
-          if (this.get('progress') - val < 0.03) {
+          if (this.get('progress') - val < 0.01) {
             this.set('nubProgressIsSynced', true);
             Ember.run.next(this, 'notifyPropertyChange', 'nubProgress');
           } else {
@@ -880,7 +875,7 @@ define("appkit/flags",
   function() {
     "use strict";
     var flags = {
-      LOG_WEBSOCKETS: false
+      LOG_WEBSOCKETS: true
     };
 
 
@@ -1144,11 +1139,11 @@ define("appkit/models/quadrant_player",
       var player = QuadrantPlayer.allByCode[data.player];
 
       if (data.average) {
-        attrs.goodness = normalizedQuadrantValue(player, 'goodness', data.average);
+        attrs.goodness = normalizedQuadrantValue(player, 'hotness', data.average);
       }
 
       if (data.correlation) {
-        attrs.hotness = normalizedQuadrantValue(player, 'hotness', data.correlation);
+        attrs.hotness = normalizedQuadrantValue(player, 'goodness', data.correlation);
       }
 
       if (player) {
@@ -1217,15 +1212,6 @@ define("appkit/models/team_listing",
 
 
     return TeamListing;
-  });
-define("appkit/routes",
-  [],
-  function() {
-    "use strict";
-    function Routes() { }
-
-
-    return Routes;
   });
 define("appkit/routes/application",
   ["appkit/models/player","appkit/models/quadrant_player"],
@@ -1497,6 +1483,7 @@ define("appkit/ziggrid/connection_manager",
           var body = JSON.parse(msg.responseBody);
 
           if (body['deliveryFor']) {
+          console.log("Should not be here");
             // TODO: shouldn't this be in observer.js?
             var h = demux[body['deliveryFor']];
             if (h && h.update) {
@@ -1569,8 +1556,8 @@ define("appkit/ziggrid/connection_manager",
           if (!this.observers[addr]) {
             this.initNeeded++;
 
-            this.observers[addr] = Observer.create(addr, function() {
-              self.observers[addr] = self.conn;
+            this.observers[addr] = Observer.create(addr, function(newConn) {
+              self.observers[addr] = newConn;
               self.initDone();
             });
           }
@@ -1718,7 +1705,8 @@ define("appkit/ziggrid/observer",
             if (body['deliveryFor']) {
               var h = demux[body['deliveryFor']];
               if (h && h.update)
-                h.update(body['table']);
+    //            h.update(body['table']);
+                h.update(body['payload']);
             } else {
               console.error('unknown message type');
             }
@@ -1768,7 +1756,7 @@ define("appkit/ziggrid/watcher",
 
       function updateIndividualThing(body) {
         body.handle_id = id;
-        store.load(type, body.id || id, body);
+        store.load(type, id, body);
       }
     }
 
