@@ -1,21 +1,20 @@
 package org.ziggrid.model;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import org.ziggrid.api.Definition;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class SnapshotDefinition implements Definition {
 	private final ObjectDefinition underlying;
-	final String name;
+	public final String name;
 	public final String from;
-	public final List<Enhancement> group = new ArrayList<Enhancement>();
-	public final List<String> valueFields = new ArrayList<String>();
-	public final List<Enhancement> values = new ArrayList<Enhancement>();
-	public Enhancement upTo;
+	public final List<NamedEnhancement> group = new ArrayList<NamedEnhancement>();
+	public final List<NamedEnhancement> values = new ArrayList<NamedEnhancement>();
+	public NamedEnhancement upTo;
 	private Decay decay;
 
 	public SnapshotDefinition(ErrorHandler eh, Model model, String docId, String name, String from) {
@@ -35,20 +34,19 @@ public class SnapshotDefinition implements Definition {
 		return "creating snapshot " + name + " of " + from;
 	}
 
-	public void groupBy(Enhancement e) {
+	public void groupBy(NamedEnhancement e) {
 		group.add(e);
 	}
 
-	public void upTo(Enhancement e) {
-		upTo = e;
+	public void upTo(NamedEnhancement u) {
+		upTo = u;
 	}
 
 	public void decay(Decay d) {
 		decay = d;
 	}
 
-	public void value(String name, Enhancement e) {
-		valueFields.add(name);
+	public void value(NamedEnhancement e) {
 		values.add(e);
 	}
 
@@ -68,27 +66,12 @@ public class SnapshotDefinition implements Definition {
 		ObjectDefinition ofModel = m.getModel(eh, from);
 		if (ofModel == null)
 			throw new ZiggridException("There is no model " + from);
-		for (Enhancement e : group)
-			handle(ofModel, e);
-		handle(ofModel, upTo);
-		for (int i=0;i<valueFields.size();i++) {
-			Enhancement e = values.get(i);
-			String type;
-			if (e instanceof FieldEnhancement) {
-				String fname = ((FieldEnhancement)e).field;
-				type = ofModel.getField(fname).type;
-			} else
-				type = "number";
-			underlying.addField(new FieldDefinition(valueFields.get(i), type, false));
+		for (NamedEnhancement e : group)
+			underlying.addField(e.fieldDefinition(ofModel));
+		underlying.addField(upTo.fieldDefinition(ofModel));
+		for (NamedEnhancement e : values) {
+			underlying.addField(e.fieldDefinition(ofModel));
 		}
-	}
-
-	public void handle(ObjectDefinition ofModel, Enhancement e) {
-		if (e instanceof FieldEnhancement) {
-			String fname = ((FieldEnhancement)e).field;
-			underlying.addField(new FieldDefinition(fname, ofModel.getField(fname).type, true));
-		} else
-			System.out.println("Cannot handle enhancement " + e);
 	}
 
 	@Override
@@ -101,26 +84,25 @@ public class SnapshotDefinition implements Definition {
 		pp.indentMore();
 		pp.append("group by ");
 		String sep = "";
-		for (Enhancement s : group) {
+		for (NamedEnhancement s : group) {
 			pp.append(sep);
-			s.prettyPrint(pp);
+			s.enh.prettyPrint(pp);
 			sep = ", ";
 		}
 		pp.append(";");
 		pp.requireNewline();
 		pp.append("up to ");
-		upTo.prettyPrint(pp);
+		upTo.enh.prettyPrint(pp);
 		pp.append(";");
 		pp.requireNewline();
 		if (decay != null) {
 			decay.prettyPrint(pp);
 			pp.requireNewline();
 		}
-		Iterator<Enhancement> vi = values.iterator();
-		for (String vf : valueFields) {
-			pp.append(vf);
+		for (NamedEnhancement vf : values) {
+			pp.append(vf.name);
 			pp.append(" = ");
-			vi.next().prettyPrint(pp);
+			vf.enh.prettyPrint(pp);
 			pp.append(";");
 			pp.requireNewline();
 		}

@@ -18,7 +18,7 @@ import org.atmosphere.cpr.AtmosphereResponse;
 @SuppressWarnings("serial")
 public class AnalyticServlet extends HttpServlet {
     private AtmosphereFramework framework;
-	private String asyncSupportClass = "com.gmmapowell.http.ws.AsyncProcessor";
+	private String asyncSupportClass = "org.zinutils.http.ws.AsyncProcessor";
 
 	public AnalyticServlet() {
     	framework = new AtmosphereFramework(false, false);
@@ -56,5 +56,4 @@ public class AnalyticServlet extends HttpServlet {
 		AtmosphereResponse aresp = builder.response(resp).request(areq).build();
 		framework.doCometSupport(areq, aresp);
 	}
-
 }

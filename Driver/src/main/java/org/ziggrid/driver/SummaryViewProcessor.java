@@ -1,33 +1,9 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Executors;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.MatchField;
-import org.ziggrid.model.SummaryDefinition;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
-import java.util.concurrent.ExecutorService;
-
 /** This is the version of the SummaryProcessor that uses the Couchbase View
  * Infrastructure, but it is just too slow.
  */
-public class SummaryViewProcessor implements ViewProcessor {
+public class SummaryViewProcessor { /* implements ViewProcessor {
 	private final Logger logger;
 	private final List<SummaryQuery> queries;
 	private final MaterializeObjects materializer;
@@ -216,7 +192,7 @@ public class SummaryViewProcessor implements ViewProcessor {
 	}
 
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
                 new Gauge<Integer>() {
 		            @Override
 		            public Integer getValue() {
@@ -226,4 +202,5 @@ public class SummaryViewProcessor implements ViewProcessor {
 		            }
 		        });
 	}
-}
+*/
+	}

@@ -7,8 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.ziggrid.api.Definition;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.utils.PrettyPrinter;
 
 public class SummaryDefinition implements Definition {
 	public final String docId;

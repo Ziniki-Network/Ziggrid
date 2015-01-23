@@ -3,7 +3,7 @@ package org.ziggrid.parsing;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.ziggrid.model.Definition;
+import org.ziggrid.api.Definition;
 
 public class ErrorHandler {
 	public final List<String> errors = new ArrayList<String>();

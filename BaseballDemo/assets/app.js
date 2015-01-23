@@ -41,8 +41,8 @@ define("appkit/adapter",
     return Adapter;
   });
 define("appkit/app",
-  ["appkit/utils/percentage_of_data","resolver","appkit/store","appkit/ziggrid/demux","appkit/models/player","appkit/initializers/watcher","appkit/initializers/csv","appkit/initializers/connection_manager","appkit/components/bean-production","appkit/components/bean-leaderboard","appkit/components/bean-homeruns"],
-  function(__dependency1__, Resolver, Store, demux, Player, watcherInitializer, csvInitializer, connectionManagerInitializer, BeanProduct, BeanLeaderboard, BeanHomeruns) {
+  ["appkit/utils/percentage_of_data","resolver","appkit/store","appkit/models/player","appkit/initializers/watcher","appkit/initializers/csv","appkit/initializers/connection_manager","appkit/components/bean-production","appkit/components/bean-leaderboard","appkit/components/bean-homeruns"],
+  function(__dependency1__, Resolver, Store, Player, watcherInitializer, csvInitializer, connectionManagerInitializer, BeanProduct, BeanLeaderboard, BeanHomeruns) {
     "use strict";
     var precision = __dependency1__.precision;
 
@@ -144,14 +144,17 @@ define("appkit/components/bean-leaderboard",
     return Leaderboard;
   });
 define("appkit/components/bean-player-profile",
-  ["appkit/ziggrid/demux"],
-  function(demux) {
+  [],
+  function() {
     "use strict";
-
     var PlayerProfile = Ember.Component.extend({
       player: null,
+      seasonHolder: null,
       init: function () {
-        this.connectionManager = this.container.lookup('connection_manager:main'); // inject
+        var self = this;
+        this.watcher = this.container.lookup('watcher:main'); // inject
+        this.seasonHolder = this.container.lookup('controller:application');
+        this.seasonHolder.addObserver('season', function() { self.playerWillChange(); self.playerChanged(); });
         this._super();
       },
       players: function() {
@@ -178,7 +181,12 @@ define("appkit/components/bean-player-profile",
       playerChanged: function() {
         var newPlayer = this.get('player');
         if (newPlayer) {
-          this.watchProfile();
+          var self = this;
+          var watching = this.watcher.watchProfile(this.get('player.code'), this.seasonHolder.get('season'), function(data) {
+            self.set('profile', data);
+          });
+          this.set('watchHandle', watching.hash);
+      
         }
         this.set('imageFailedToLoad', false);
       }.observes('player').on('init'),
@@ -186,42 +194,14 @@ define("appkit/components/bean-player-profile",
       watchHandle: null,
       profile: null,
 
-      watchProfile: function() {
-        var handle = ++demux.lastId;
-
-        this.set('watchHandle', handle);
-        this.set('profile', null);
-
-        var player = this;
-        demux[handle] = {
-          update: function(data) {
-            player.set('profile', data);
-          }
-        };
-
-        var query = {
-          watch: 'Profile',
-          unique: handle,
-          player: this.get('player.code')
-        };
-
-        // Send the JSON message to the server to begin observing.
-        var stringified = JSON.stringify(query);
-        this.connectionManager.send(stringified);
-      },
-
       unwatchProfile: function() {
         var watchHandle = this.get('watchHandle');
 
         if (!watchHandle) {
           throw new Error('No handle to unwatch');
         }
-
-        this.connectionManager.send(JSON.stringify({
-          unwatch: watchHandle
-        }));
-
-        this.set('watchHandle', null); // clear handle
+    
+        this.watcher.unwatch(watchHandle);
       },
 
       // TODO: combine the various player car
@@ -260,8 +240,13 @@ define("appkit/components/bean-player",
       showNub: true,
       _nubProgress: 0,
       nubProgressIsSynced: true,
+  
+      init: function() {
+        this._super();
+        this.container.register('bean-player:main', this, { instantiate: false });
+      },
 
-      generator: Ember.computed.alias('connectionManager.generator'),
+      generators: Ember.computed.alias('connectionManager.generators'),
 
       progressTextStyle: function() {
         var nubProgress = this.get('nubProgress') || 0;
@@ -299,14 +284,20 @@ define("appkit/components/bean-player",
       actions: {
         play: function() {
           if (this.get('isPlaying')) { return; }
-          this.get('generator').start();
+          var gens = this.get('generators');
+          for (var g in gens) {
+            gens[g].start();
+          }
           this.set('isPlaying', true);
           this.sendAction('didBeginPlaying');
         },
 
         pause: function() {
           if (!this.get('isPlaying')) { return; }
-          this.get('generator').stop();
+          var gens = this.get('generators');
+          for (var g in gens) {
+            gens[g].stop();
+          }
           this.set('isPlaying', false);
           this.sendAction('didEndPlaying');
         }
@@ -605,10 +596,9 @@ define("appkit/components/bean-standings",
     return Table;
   });
 define("appkit/components/bean-table",
-  ["appkit/ziggrid/demux"],
-  function(demux) {
+  [],
+  function() {
     "use strict";
-
     var Table = Ember.Component.extend({
 
       // e.g. 'Leaderboard_production_groupedBy_season'
@@ -642,14 +632,12 @@ define("appkit/components/bean-table",
           watcher.unwatch(handle);
         }
 
-        var model = watcher.watch(this.get('type'),
+        var config = watcher.watch(this.get('type'),
                                   this.get('entryType'),
                                   { season: '' + this.get('season') });
 
-        this.set('content', model.get('table'));
-
-        // this is kinda hacky/brittle; this is updated in watcher.watch()
-        this.set('handle', demux.lastId);
+        this.set('content', config.model.get('table'));
+        this.set('handle', config.hash);
       }.observes('season').on('init')
     });
 
@@ -658,10 +646,9 @@ define("appkit/components/bean-table",
     return Table;
   });
 define("appkit/components/bean-team-standing",
-  ["appkit/ziggrid/demux"],
-  function(demux) {
+  [],
+  function() {
     "use strict";
-
     var TeamStanding = Ember.Component.extend({
       _applicationController: Ember.computed(function(){
         return this.container.lookup('controller:application');
@@ -691,13 +678,12 @@ define("appkit/components/bean-team-standing",
           season: '' + season
         };
 
-        console.log('watching', subscription);
+    //    console.log('watching', subscription);
 
-        var model = watcher.watch('WinLoss', 'WinLoss', subscription);
+        var track = watcher.watch('WinLoss', 'WinLoss', subscription);
+        this.set('handle', track.hash);
 
-        this.set('handle', demux.lastId);
-
-        return model;
+        return track.model;
       }.property('team.code', 'season'),
       wins: Ember.computed.alias('winLoss.wins'),
       losses: Ember.computed.alias('winLoss.losses')
@@ -828,8 +814,8 @@ define("appkit/controllers/quadrant_player",
     return QuadrantPlayerController;
   });
 define("appkit/controllers/standings",
-  ["appkit/ziggrid/demux","appkit/utils/group_by"],
-  function(demux, groupBy) {
+  ["appkit/utils/group_by"],
+  function(groupBy) {
     "use strict";
 
     function Region(name, teams) {
@@ -875,7 +861,7 @@ define("appkit/flags",
   function() {
     "use strict";
     var flags = {
-      LOG_WEBSOCKETS: true
+      LOG_WEBSOCKETS: false
     };
 
 
@@ -894,7 +880,8 @@ define("appkit/initializers/connection_manager",
       initialize: function(container, application) {
         var connectionManager = ConnectionManager.create({
           url: url,
-          namespace: application
+          namespace: application,
+          container: container
         });
 
         application.register('connection_manager:main', connectionManager, {
@@ -1004,8 +991,8 @@ define("appkit/models/player",
     return Player;
   });
 define("appkit/models/quadrant_player",
-  ["appkit/ziggrid/demux","appkit/models/player","appkit/flags"],
-  function(demux, Player, flags) {
+  ["appkit/models/player","appkit/flags"],
+  function(Player, flags) {
     "use strict";
 
     var App = window.App;
@@ -1018,15 +1005,15 @@ define("appkit/models/quadrant_player",
       },
 
       code: Ember.computed.alias('data.code'),
+      profileData: null,
+      profile: null,
 
       realized: false,
       hotness: 0,
       goodness: 0,
-      watchHandle: null,
       imageUrl: function(){
         return '/players/' + this.get('code') + '.png';
       }.property('data.name').readOnly(),
-      watching: Ember.computed.bool('watchHandle'),
 
       // the actual player data resides on the Player mode,
       // this merely decorates. It is possible for us to have
@@ -1045,50 +1032,14 @@ define("appkit/models/quadrant_player",
         return !!(seasons && seasons[season]);
       },
 
-      humanizedName: Ember.computed.oneWay('data.PlayerName'),
+      humanizedName: Ember.computed.oneWay('profileData.fullname'),
 
       watchProfile: function() {
-        // TODO: inject ziggrid:connection-manager
-        var connectionManager = getConnectionManager();
-
-        var handle = ++demux.lastId;
-
-        this.set('watchHandle', handle);
-        this.set('profile', null);
-
-        var player = this;
-
-        demux[handle] = {
-          update: function(data) {
-            player.set('profile', data);
-          }
-        };
-
-        var query = {
-          watch: 'Profile',
-          unique: handle,
-          player: this.get('name')
-        };
-
-        // Send the JSON message to the server to begin observing.
-        var stringified = JSON.stringify(query);
-        connectionManager.send(stringified);
+        this.set('profile', this.get('profileData'));
       },
 
       unwatchProfile: function() {
-        // TODO: inject ziggrid:connection-manager
-        var connectionManager = getConnectionManager();
-        var watchHandle = this.get('watchHandle');
-
-        if (!watchHandle) {
-          throw new Error('No handle to unwatch');
-        }
-
-        connectionManager.send(JSON.stringify({
-          unwatch: watchHandle
-        }));
-
-        this.set('watchHandle', null); // clear handle
+        this.set('profile', null);
       }
     });
 
@@ -1106,20 +1057,10 @@ define("appkit/models/quadrant_player",
 
         return player;
       },
-      watchPlayers: function(playerNames, season, dayOfYear) {
-
+      watchPlayers: function(container, playerNames, season, dayOfYear) {
+        var watcher = container.lookup('watcher:main');
         playerNames.forEach(function(playerName, i) {
-          watchAttribute('Snapshot_playerSeasonToDate',
-                         playerName,
-                         season,
-                         dayOfYear);
-
-          watchAttribute('Snapshot_clutchnessSeasonToDate',
-                         playerName,
-                         season,
-                         dayOfYear);
-
-
+          watchPlayer(watcher, playerName, season);
           QuadrantPlayer.findOrCreateByName(playerName);
         });
 
@@ -1132,63 +1073,27 @@ define("appkit/models/quadrant_player",
         console.log('updateQuadrantPlayer', data);
       }
 
-      var attrs = {
-        realized: true
-      };
+      if (!data.player) return;
 
       var player = QuadrantPlayer.allByCode[data.player];
+      if (!player)
+        player = QuadrantPlayer.create({ name: data.player });
 
-      if (data.average) {
-        attrs.goodness = normalizedQuadrantValue(player, 'hotness', data.average);
-      }
-
-      if (data.correlation) {
-        attrs.hotness = normalizedQuadrantValue(player, 'goodness', data.correlation);
-      }
-
-      if (player) {
-        player.setProperties(attrs);
-      } else {
-        attrs.name = data.player;
-        QuadrantPlayer.create(attrs);
-      }
+      player.set('realized', true);
+      player.set('profileData', data);
+      player.set('goodness', normalizedQuadrantValue(data['clutchness']));
+      player.set('hotness', normalizedQuadrantValue(data['hotness']));
     }
 
-    function normalizedQuadrantValue(player, key, value) {
-      if (isValidQuadrantValue(value)) {
-        return value;
-      } else {
-        return (player && Ember.get(player, key)) || Math.random();
-      }
+    function normalizedQuadrantValue(value) {
+      if (typeof value === undefined) return 0.5;
+      if (value <= 0) return 0.0;
+      if (value > 1) return 1.0;
+      return value;
     }
 
-    function isValidQuadrantValue(value) {
-      return value && value >= 0 && value <= 1;
-    }
-
-    function watchAttribute(type, playerName, season, dayOfYear) {
-
-      var handle = ++demux.lastId;
-      demux[handle] = {
-        update: updateQuadrantPlayer
-      };
-
-      var hash = {
-        watch: type,
-        unique: handle,
-        player: playerName//,
-        //season: season
-      };
-
-      if (dayOfYear) {
-        hash.dayOfYear = dayOfYear;
-      }
-
-      // Send the JSON message to the server to begin observing.
-      var stringified = JSON.stringify(hash);
-      getConnectionManager().send(stringified);
-
-      // fireStubbedData(handle, playerName, 500 + i*500);
+    function watchPlayer(watcher, playerName, season) {
+      watcher.watchProfile(playerName, season, updateQuadrantPlayer);
     }
 
     // TODO: inject
@@ -1244,7 +1149,7 @@ define("appkit/routes/application",
 
         var allStarPlayerCodes = this.container.lookupFactory('model:player').playerCodes();
 
-        var players = QuadrantPlayer.watchPlayers(allStarPlayerCodes);
+        var players = QuadrantPlayer.watchPlayers(this.container, allStarPlayerCodes, season);
         this.controllerFor('quadrant').set('players', players);
       },
 
@@ -1420,59 +1325,62 @@ define("appkit/views/filter",
     return FilterView;
   });
 define("appkit/ziggrid/connection_manager",
-  ["appkit/ziggrid/generator","appkit/ziggrid/observer","appkit/ziggrid/demux","appkit/flags"],
-  function(Generator, Observer, demux, flags) {
+  ["appkit/ziggrid/generator","appkit/ziggrid/observer","appkit/ziggrid/watcher","appkit/flags","zinc"],
+  function(Generator, Observer, watcher, flags, zinc) {
     "use strict";
 
     var ConnectionManager = Ember.Object.extend({
-
       url: null,
 
       // Reference to the global app namespace where we'll be installing
       // dynamically generated DS.Model classes
       namespace: null,
-
-      generator: null,
+  
+      requestor: null,
 
       establishConnection: function() {
 
         var self = this;
 
+        this.generators = {};
         this.observers = {};
-        this.initNeeded = 1;
-        this.initCompleted = 0;
 
-        var messages = [];
-
-        var conn = this.conn = jQuery.atmosphere.subscribe({
-          url: this.url + 'updates',
-          transport: 'websocket',
-          fallbackTransport: 'long-polling',
-
-          // handle the 'open' message
-          onOpen: function(response) {
-            conn.push(JSON.stringify({ action: 'init' }));
-          },
-
-          // and then handle each incoming message
-          onMessage: function(msg) {
-            // Have to clone because jQuery atmosphere reuses response objects.
-            messages.push({
-              status: msg.status,
-              responseBody: msg.responseBody
-            });
-            Ember.run.throttle(self, 'flushMessages', messages, 150);
-          }
+        var servers = [];
+        zinc.newRequestor("/ziggrid").then(function(req) {
+          self.requestor = req;
+          req.subscribe("models", function(msg) {
+            self.processModels(msg.models);
+          }).send();
+          req.subscribe("servers", function(msg) {
+            servers.push(msg);
+            Ember.run.throttle(self, 'flushServers', servers, 150);  
+          }).send();
         });
       }.on('init'),
 
-      flushMessages: function(messages) {
+      processModels: function(models) {
+        while (models.length) {
+          var body = models.shift();
+          this.registerModel(body.modelName, body.model);
+        }
+        this.modelsRead();
+      },
+
+      flushServers: function(messages) {
         while (messages.length) {
-          var message = messages.shift();
-          this.handleMessage(message);
+          var body = messages.shift().servers[0];
+          var endpoint = body.endpoint,
+          addr = 'http://' + endpoint + '/ziggrid/',
+          server = body.server;
+
+          if (flags.LOG_WEBSOCKETS) {
+            console.log('Have new ' + server + ' server at ' + endpoint);
+          }
+          this.registerServer(server, addr);
         }
       },
 
+    /*
       handleMessage: function(msg) {
         if (msg.status === 200) {
 
@@ -1482,19 +1390,7 @@ define("appkit/ziggrid/connection_manager",
 
           var body = JSON.parse(msg.responseBody);
 
-          if (body['deliveryFor']) {
-          console.log("Should not be here");
-            // TODO: shouldn't this be in observer.js?
-            var h = demux[body['deliveryFor']];
-            if (h && h.update) {
-              if (body.payload.table) {
-                // Assume tabular data
-                h.update(body.payload.table);
-              } else {
-                h.update(body.payload);
-              }
-            }
-          } else if (body['error']) {
+          if (body['error']) {
             console.error(body['error']);
           } else if (body['modelName']) {
             this.registerModel(body.modelName, body.model);
@@ -1506,12 +1402,13 @@ define("appkit/ziggrid/connection_manager",
             if (flags.LOG_WEBSOCKETS) {
               console.log('Have new ' + server + ' server at ' + endpoint);
             }
+              console.log('Have new ' + server + ' server at ' + endpoint);
             this.registerServer(server, addr);
 
           } else if (body['status']) {
             var stat = body['status'];
-            if (stat === 'initdone') {
-              this.initDone();
+            if (stat === 'modelsSent') {
+              this.modelsRead();
             } else {
               console.log('Do not recognize ' + stat);
             }
@@ -1523,6 +1420,7 @@ define("appkit/ziggrid/connection_manager",
           //callback.error('HTTP Error: ' + msg.status);
         }
       },
+    */
 
       registerModel: function(name, model) {
         var attrs = {};
@@ -1549,123 +1447,95 @@ define("appkit/ziggrid/connection_manager",
 
       registerServer: function(server, addr) {
         var self = this;
+        console.log(server + " " + addr);
         if (server === 'generator') {
-          this.set('generator', Generator.create(addr));
+          if (!this.generators[addr]) {
+            this.generators[addr] = Generator.create(this, addr, function(gen, newConn) {
+              var player = self.container.lookup('bean-player:main');
+              if (player.get('isPlaying')) {
+                gen.start();
+              } else {
+                gen.stop();
+              }
+            });
+          }
         } else if (server === 'ziggrid') {
-          //return;
           if (!this.observers[addr]) {
-            this.initNeeded++;
-
-            this.observers[addr] = Observer.create(addr, function(newConn) {
+            var obsr = this.observers[addr] = Observer.create(this, addr, function(newConn) {
               self.observers[addr] = newConn;
-              self.initDone();
+              var watcher = self.container.lookup('watcher:main');
+              watcher.newObserver(addr, newConn); 
             });
           }
         }
       },
-
-      initDone: function() {
-        if (++this.initCompleted === this.initNeeded) {
-          window.App.advanceReadiness();
-        }
+  
+      deregisterGenerator: function(addr) {
+        console.log("Removing ", addr, " from generators: ", this.generators);
+        delete this.generators[addr];
+        console.log("Remaining generators: ", this.generators);
       },
 
-      send: function(msg) {
-        var observers = this.observers;
+      deregisterObserver: function(addr) {
+        console.log("Removing ", addr, " from observers: ", this.observers);
+        var watcher = this.container.lookup('watcher:main');
+        watcher.deadObserver(addr); 
+        delete this.observers[addr];
+        console.log("Remaining observers: ", this.observers);
+      },
 
-        if (flags.LOG_WEBSOCKETS) {
-          console.log('sending ', msg, 'to', observers);
-        }
-
-        for (var u in observers) {
-          if (observers.hasOwnProperty(u)) {
-            observers[u].push(msg);
-          }
-        }
+      modelsRead: function() {
+        window.App.advanceReadiness();
       }
     });
 
 
     return ConnectionManager;
   });
-define("appkit/ziggrid/demux",
-  [],
-  function() {
-    "use strict";
-
-    // TODO: better place for this? global var exports ftw
-
-    var demux = {
-      lastId: 0
-    };
-
-
-
-    return demux;
-  });
 define("appkit/ziggrid/generator",
-  ["appkit/flags"],
-  function(flags) {
+  ["appkit/flags","zinc"],
+  function(flags, zinc) {
     "use strict";
 
-    function Generator(url, callback) {
-      var open = {
-        url: url + 'generator',
-        transport: 'websocket',
-        fallbackTransport: 'long-polling',
-
-        onOpen: function(response) {
-          if (flags.LOG_WEBSOCKETS) {
-            console.log('opened generator connection with response', response);
-          }
-        },
-
-        // and then handle each incoming message
-        onMessage: function(msg) {
-          if (msg.status === 200) {
-            if (flags.LOG_WEBSOCKETS) {
-              console.log(msg.responseBody);
-            }
-            var body = JSON.parse(msg.responseBody);
-          } else {
-            console.log('Generator HTTP Error:', msg.status);
-          }
-        }
-      };
-
-      var conn = this.conn = jQuery.atmosphere.subscribe(open);
+    function Generator(mgr, addr, callback) {
+      var self = this;
+      zinc.newRequestor(addr).then(function(req) {
+        self.requestor = req;
+      });
     }
 
     Generator.prototype = {
-
       hasSetDelay: false,
 
       send: function(msg) {
-        console.log('Sending generator message', msg);
+        if (flags.LOG_WEBSOCKETS) {
+          console.log('Sending generator message', msg);
+        }
         this.conn.push(msg);
       },
 
       start: function() {
         if (!this.hasSetDelay) {
           // Don't overload the generator; give it a moderate delay the first time.
-          this.setDelay(20);
+          // This is only needed if the system can't keep up; don't use it everywhere
+          // this.setDelay(20);
           this.hasSetDelay = true;
         }
 
-        this.send(JSON.stringify({'action':'start'}));
+        this.requestor.invoke("generator/start").send();
       },
 
       stop: function() {
-        this.send(JSON.stringify({'action':'stop'}));
+        this.requestor.invoke("generator/stop").send();
       },
 
       setDelay: function(ms) {
-        this.send(JSON.stringify({'action':'delay','size':ms}));
+        this.requestor.invoke("generator/setDelay").setOption("delay", ms).send();
       }
     };
 
-    Generator.create = function(url, callback) {
-      return new Generator(url, callback);
+    Generator.create = function(mgr, url, callback) {
+      return new Generator(mgr, url, callback);
     };
 
 
@@ -1673,60 +1543,34 @@ define("appkit/ziggrid/generator",
     return Generator;
   });
 define("appkit/ziggrid/observer",
-  ["appkit/ziggrid/demux","appkit/flags"],
-  function(demux, flags) {
+  ["appkit/flags","zinc"],
+  function(flags, zinc) {
     "use strict";
 
-    function Observer(url, callback) {
-
-      url = url + 'updates';
+    function Observer(mgr, addr, callback) {
+      var url = addr + 'ziggrid';
 
       if (flags.LOG_WEBSOCKETS) {
         console.log('Observer connecting at ' + url);
       }
 
-      var conn = jQuery.atmosphere.subscribe({
-        url: url,
-
-        transport: 'websocket',
-        fallbackTransport: 'long-polling',
-
-        onOpen: function(response) {
-          callback(conn);
-        },
-
-        onMessage: function(msg) {
-          if (msg.status === 200) {
-            // TODO: why are we still getting deliveryFor messages in connectionManager?
-            if (flags.LOG_WEBSOCKETS) {
-              console.log('Received message ' + msg.responseBody);
-            }
-            var body = JSON.parse(msg.responseBody);
-            if (body['deliveryFor']) {
-              var h = demux[body['deliveryFor']];
-              if (h && h.update)
-    //            h.update(body['table']);
-                h.update(body['payload']);
-            } else {
-              console.error('unknown message type');
-            }
-          } else {
-            console.error('HTTP error');
-          }
-        }
+      var self = this;
+      zinc.newRequestor(url).then(function(req) {
+        self.requestor = req;
+        callback(req);
       });
     }
 
-    Observer.create = function(url, callback) {
-      return new Observer(url, callback);
+    Observer.create = function(mgr, url, callback) {
+      return new Observer(mgr, url, callback);
     };
 
 
     return Observer;
   });
 define("appkit/ziggrid/watcher",
-  ["appkit/ziggrid/demux"],
-  function(demux) {
+  ["appkit/flags"],
+  function(flags) {
     "use strict";
 
     var container;
@@ -1737,55 +1581,85 @@ define("appkit/ziggrid/watcher",
       this.update = type === entryType ? updateIndividualThing : updateTabularData;
 
       function updateTabularData(body) {
-        var rows = [];
+        for (var p in body) {
+          if (body.hasOwnProperty(p) && typeof(body[p]) === 'object') {
+            body = body[p][0];
+            var table = body['table'];
+            var rows = [];
 
-        for (var i = 0; i < body.length; i++) {
-          var item = body[i];
+            for (var i = 0; i < table.length; i++) {
+              var item = table[i];
 
-          var attrs = {};
-          attrs[Ember.keys(entryType.model)[0]] = item[0];
+              var attrs = {};
+              attrs[Ember.keys(entryType.model)[0]] = item[0];
 
-          store.load(entryType, item[1], attrs);
-          rows.push(item[1]);
+              store.load(entryType, item[1], attrs);
+              rows.push(item[1]);
+            }
+
+            store.load(type, id, {
+              table: rows
+            });
+            return;
+          }
         }
-
-        store.load(type, id, {
-          table: rows
-        });
       }
 
       function updateIndividualThing(body) {
-        body.handle_id = id;
-        store.load(type, id, body);
+        for (var p in body) {
+          if (body.hasOwnProperty(p) && typeof(body[p]) === 'object') {
+            body = body[p][0];
+            body.handle_id = id;
+            store.load(type, id, body);
+            return;
+          }
+        }
       }
     }
 
+    function subscribe(observer, hash) {
+      var req = observer.subscribe("watch/"+hash.watch, hash.callback);
+      if (hash.opts) {
+        for (var opt in hash.opts) {
+          if (hash.opts.hasOwnProperty(opt))
+            req.setOption(opt, hash.opts[opt]);
+        }
+      }
+      req.send();
+      if (!hash.subscriptions)
+        hash.subscriptions = [];
+      hash.subscriptions.push(req);
+    }
+ 
     function Watcher(_namespace) {
       this.namespace = _namespace;
       container = this.container = _namespace.__container__;
     }
 
     var gameDates = [];
+    var randomId = 1;
 
     Watcher.prototype = {
+      observers: {},
+      watching: [],
+      newObserver: function(addr, obsr) {
+        this.observers[addr] = obsr;
+        for (var u=0;u<this.watching.length;u++) {
+          var hash = this.watching[u];
+          subscribe(obsr, hash);
+        }
+      },
+      deadObserver: function(addr) {
+        delete this.observers[addr];
+      },
       watchGameDate: function() {
-        var handle = ++demux.lastId;
-
-        demux[handle] = {
-          update: function(a) {
-            gameDates.pushObject(a);
-          }
-        };
-
         var query = {
           watch: 'GameDate',
-          unique: handle
+          callback: function(o) { gameDates.pushObject(o.gameDates[0]); }
         };
 
-        var stringified = JSON.stringify(query);
-
-        var connectionManager = container.lookup('connection_manager:main');
-        connectionManager.send(stringified);
+        this.sendToCurrentObservers(query);
+        this.watching.push(query);
 
         //this.sendFakeGameDates();
 
@@ -1804,41 +1678,59 @@ define("appkit/ziggrid/watcher",
         Ember.run.later(this, 'sendFakeGameDates', 400);
       },
 
-      watch: function(typeName, entryTypeName, opts, updateHandler) {
-        var type = this.namespace[typeName]; // ED limitation
-        var handle = ++demux.lastId;
-        var store = container.lookup('store:main');
-
-        store.load(type, handle, {});
-
-        var model = store.find(type, handle);
-        var hash = $.extend({
-          watch: typeName,
-          unique: handle
-        }, opts);
-
-        var entryType = this.namespace[entryTypeName];
-
-        demux[handle] = updateHandler ? { update: updateHandler } :
-                        new Loader(type, entryType, model.get('id'), opts);
-
-        var stringified = JSON.stringify(hash);
-
-        // TODO: Change this to forward to ZiggridObserver.
-
-        // Send the JSON message to the server to begin observing.
-        var connectionManager = container.lookup('connection_manager:main');
-        connectionManager.send(stringified);
-
-        return model;
+      watchProfile: function(player, season, callback) {
+        var opts = {
+          player: player,
+          season: "" + season
+        };
+  
+        return this.watch('Profile', 'Profile', opts, function(ja) { callback(ja['profiles'][0]); });
       },
 
-      unwatch: function(handle) {
-        var connectionManager = container.lookup('connection_manager:main');
-        connectionManager.send(JSON.stringify({ unwatch: handle }));
+      watch: function(typeName, entryTypeName, opts, updateHandler) {
+        var type = this.namespace[typeName]; // ED limitation
+        var entryType = this.namespace[entryTypeName];
+        var store = container.lookup('store:main');
+
+    // The use of "handle" here is left over from before
+    // I think we should want this passed in, possibly with the whole model
+        var handle = ++randomId;
+        store.load(type, handle, {});
+        var model = store.find(type, handle);
+
+        var hash = {
+          watch: typeName,
+          opts: opts,
+          callback: updateHandler ? updateHandler :
+                    new Loader(type, entryType, model.get('id'), opts).update
+        };
+
+        // Send the JSON message to the server to begin observing.
+        this.sendToCurrentObservers(hash);
+        this.watching.push(hash);
+
+        return {"model": model, "handle": handle, "hash": hash};
+      },
+
+      unwatch: function(hash) {
+        for (var i=0;i<hash.subscriptions.length;i++)
+          hash.subscriptions[i].unsubscribe();
+        var idx = this.watching.indexOf(hash);
+        this.watching.splice(idx, 1); 
+      },
+  
+      sendToCurrentObservers: function(hash) {
+        if (flags.LOG_WEBSOCKETS) {
+          console.log('watching', hash.watch, 'from', this.observers);
+        }
+
+        for (var u in this.observers) {
+          if (this.observers.hasOwnProperty(u)) {
+            subscribe(this.observers[u], hash);
+          }
+        }
       }
     };
-
 
     return Watcher;
   });

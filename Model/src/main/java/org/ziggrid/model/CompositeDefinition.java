@@ -3,27 +3,17 @@ package org.ziggrid.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.ziggrid.api.Definition;
 import org.ziggrid.model.ObjectDefinition.KeyElement;
 import org.ziggrid.model.ObjectDefinition.KeyField;
 import org.ziggrid.model.ObjectDefinition.KeyString;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class CompositeDefinition implements Definition {
-	public class ValueField {
-		public final String key;
-		public final Enhancement value;
-
-		public ValueField(String f, Enhancement v) {
-			this.key = f;
-			this.value = v;
-		}
-
-	}
-
 	public final String into;
 	public final String from;
 	public final List<KeyElement> keys = new ArrayList<KeyElement>();
-	public final List<ValueField> fields = new ArrayList<ValueField>();
+	public final List<NamedEnhancement> fields = new ArrayList<NamedEnhancement>();
 
 	public CompositeDefinition(String into, String from) {
 		this.into = into;
@@ -43,8 +33,8 @@ public class CompositeDefinition implements Definition {
 		keys.add(new KeyField(ki));
 	}
 
-	public void addField(String f, Enhancement v) {
-		fields.add(new ValueField(f, v));
+	public void addField(NamedEnhancement v) {
+		fields.add(v);
 	}
 
 	public String getViewName(Grouping grouping) {
@@ -65,9 +55,9 @@ public class CompositeDefinition implements Definition {
 		}
 		pp.append(";");
 		pp.requireNewline();
-		for (ValueField s : fields) {
-			pp.append(s.key + ":");
-			s.value.prettyPrint(pp);
+		for (NamedEnhancement s : fields) {
+			pp.append(s.name + ":");
+			s.enh.prettyPrint(pp);
 			pp.append(";");
 			pp.requireNewline();
 		}

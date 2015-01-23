@@ -1,7 +1,7 @@
 package org.ziggrid.generator.baseball;
 
-import org.ziggrid.utils.collections.CollectionUtils;
-import org.ziggrid.utils.exceptions.UtilException;
+import org.zinutils.collections.CollectionUtils;
+import org.zinutils.exceptions.UtilException;
 
 public class InningState {
 	public enum RunnerAdvances {

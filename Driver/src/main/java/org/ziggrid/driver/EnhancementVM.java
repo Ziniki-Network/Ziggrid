@@ -16,6 +16,7 @@ import org.ziggrid.model.ListConstant;
 import org.ziggrid.model.StringConstant;
 import org.ziggrid.model.StringContainsOp;
 import org.ziggrid.model.SumOperation;
+import org.zinutils.exceptions.UtilException;
 
 public class EnhancementVM {
 	public Object process(Enhancement enhancement, JSONObject entry) throws JSONException {
@@ -34,9 +35,21 @@ public class EnhancementVM {
 			BinaryOperation binop = (BinaryOperation) enhancement;
 			Object lhs = process(binop.lhs, entry);
 			Object rhs = process(binop.rhs, entry);
-			if (binop.op.equals("=="))
-				return lhs.equals(rhs);
-			else if (binop.op.equals("-")) {
+			if (binop.op.equals("==")) {
+				if (lhs instanceof Integer && rhs instanceof Integer)
+					return (int)(Integer)lhs == (int)(Integer)rhs;
+				else if (lhs instanceof Number && rhs instanceof Number)
+					return number(lhs) == number(rhs);
+				else
+					return lhs.equals(rhs);
+			} else if (binop.op.equals(">=")) {
+				if (lhs instanceof Integer && rhs instanceof Integer)
+					return (int)(Integer)lhs >= (int)(Integer)rhs;
+				else if (lhs instanceof Number && rhs instanceof Number)
+					return number(lhs) >= number(rhs);
+				else
+					throw new UtilException("Cannot compare objects of type " + lhs.getClass() + " and " + rhs.getClass());
+			} else if (binop.op.equals("-")) {
 				return number(lhs)-number(rhs);
 			} else if (binop.op.equals("/")) {
 				return number(lhs)/number(rhs);

@@ -6,8 +6,10 @@ import java.util.Map;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.ziggrid.api.Definition;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.utils.PrettyPrinter;
 
 public class ObjectDefinition implements Definition {
 	public static interface KeyElement {
@@ -15,6 +17,8 @@ public class ObjectDefinition implements Definition {
 		void prettyPrint(PrettyPrinter pp);
 
 		Object extract(JSONObject obj) throws JSONException;
+
+		Object extract(Map<String, Object> options);
 
 	}
 
@@ -27,6 +31,11 @@ public class ObjectDefinition implements Definition {
 		
 		@Override
 		public Object extract(JSONObject obj) {
+			return ki;
+		}
+
+		@Override
+		public Object extract(Map<String, Object> options) {
 			return ki;
 		}
 
@@ -53,6 +62,13 @@ public class ObjectDefinition implements Definition {
 		@Override
 		public Object extract(JSONObject obj) throws JSONException {
 			return obj.get(field);
+		}
+
+		@Override
+		public Object extract(Map<String, Object> options) {
+			if (!options.containsKey(field))
+				throw new UtilException("Cannot recover field " + field);
+			return options.get(field);
 		}
 		
 	}

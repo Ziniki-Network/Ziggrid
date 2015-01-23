@@ -1,25 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.utils.utils.DateUtils;
-
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.RowError;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.View;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewResponseNoDocs;
-import com.couchbase.client.protocol.views.ViewRow;
-
-public class CouchQuery {
+public class CouchQuery { /*
 	private static final Logger logger = LoggerFactory.getLogger("CouchQuery");
 	private final CouchbaseClient conn;
 	private final View view;
@@ -30,7 +11,7 @@ public class CouchQuery {
 	}
 	
 	/** Bump is supposed to ensure that the views are updated.
-	 */
+	 * /
 	public void bump() {
 		if (view == null)
 			return;
@@ -74,4 +55,5 @@ public class CouchQuery {
 	public CouchbaseClient getConnection() {
 		return conn;
 	}
+*/
 }

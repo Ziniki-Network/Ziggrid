@@ -1,44 +1,6 @@
 package org.ziggrid.driver;
 
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.model.CorrelationDefinition;
-import org.ziggrid.model.EnhancementDefinition;
-import org.ziggrid.model.Grouping;
-import org.ziggrid.model.LeaderboardDefinition;
-import org.ziggrid.model.Model;
-import org.ziggrid.model.SnapshotDefinition;
-import org.ziggrid.model.SummaryDefinition;
-import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.parsing.JsonReader;
-import org.ziggrid.utils.collections.CollectionUtils;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.utils.Crypto;
-import org.ziggrid.utils.utils.FileUtils;
-
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.CouchbaseConnectionFactory;
-import com.couchbase.client.CouchbaseConnectionFactoryBuilder;
-import com.couchbase.client.protocol.views.Paginator;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.View;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
-
-public class MaterializeObjects {
+public class MaterializeObjects {/*
 	private static final Logger logger = LoggerFactory.getLogger("MaterializeObjects");
 	private static List<String> listTable = CollectionUtils.listOf("table");
 	private static List<String> listCorrelation = CollectionUtils.listOf("correlation", "count");
@@ -364,9 +326,9 @@ public class MaterializeObjects {
 			ex.printStackTrace();
 		}
 	}
-	*/
+	* /
 	
-	String computeSHAId(String table, String key) {
+	public String computeSHAId(String table, String key) {
 		if (key == null)
 			return table;
 		return table + "-" + Crypto.hash(key);
@@ -386,4 +348,4 @@ public class MaterializeObjects {
 			throw UtilException.wrap(ex);
 		}
 	}
-}
+*/}

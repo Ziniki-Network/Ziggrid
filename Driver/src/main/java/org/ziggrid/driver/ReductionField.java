@@ -1,15 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.Iterator;
-
-import org.ziggrid.model.FieldDefinition;
-import org.ziggrid.model.Reduction;
-import org.ziggrid.utils.exceptions.UtilException;
-
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
-
-public class ReductionField {
+public class ReductionField {/*
 	private final FieldDefinition field;
 	private final Iterator<ViewRow> rows;
 	private ViewRow row;
@@ -40,5 +31,5 @@ public class ReductionField {
 		else
 			throw new UtilException("Cannot reduce type " + value);
 	}
-
+*/
 }

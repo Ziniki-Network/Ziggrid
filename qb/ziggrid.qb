@@ -1,15 +1,21 @@
 nature java com.gmmapowell.quickbuild.build.java.JavaNature
 nature maven com.gmmapowell.quickbuild.build.maven.MavenNature
 
+# Couchbase
+repo http://files.couchbase.com/maven2/
+maven couchbase:couchbase-client:jar:1.1.9
+maven net.spy:spymemcached:jar:2.9.1
+
 #Atmosphere
 repo http://oss.sonatype.org/content/repositories/snapshots
-maven org.atmosphere:atmosphere-runtime:jar:1.1.0.beta1
-maven org.atmosphere:wasync:jar:1.0.0-SNAPSHOT
+maven org.atmosphere:atmosphere-runtime:jar:2.2.0
+maven org.atmosphere:wasync:jar:1.3.0
+maven com.ning:async-http-client:jar:1.7.20
 
 maven org.codehaus.jettison:jettison:jar:1.3.1
-maven org.slf4j:slf4j-api:jar:1.7.5
+maven org.slf4j:slf4j-api:jar:1.7.6
 #maven org.slf4j:slf4j-jdk14:jar:1.7.5
-maven org.slf4j:slf4j-log4j12:jar:1.7.5
+maven org.slf4j:slf4j-log4j12:jar:1.7.6
 #maven rhino:js:jar:1.7R2
 
 maven junit:junit:jar:4.8.2
@@ -17,60 +23,120 @@ maven com.rabbitmq:amqp-client:jar:3.1.4
 maven log4j:log4j:jar:1.2.17
 maven woodstox:wstx-asl:jar:3.2.0
 maven org.codehaus.jackson:jackson-core-asl:jar:1.9.12
-maven org.slf4j:jul-to-slf4j:jar:1.7.5
+maven org.slf4j:jul-to-slf4j:jar:1.7.6
 
-repo http://files.couchbase.com/maven2/
-maven couchbase:couchbase-client:jar:1.1.9
-maven net.spy:spymemcached:jar:2.9.1
-
-maven org.apache.httpcomponents:httpcore:jar:4.2
+maven org.apache.httpcomponents:httpcore:jar:4.3.2
 maven commons-codec:commons-codec:jar:1.5
 maven org.apache.httpcomponents:httpcore-nio:jar:4.1.4
 maven io.netty:netty:jar:3.5.10.Final
 maven commons-httpclient:commons-httpclient:jar:3.1
-maven org.slf4j:jcl-over-slf4j:jar:1.7.5
+maven org.apache.httpcomponents:httpclient:jar:4.3.3
+maven org.slf4j:jcl-over-slf4j:jar:1.7.6
 maven com.google.guava:guava:jar:14.0.1
 
+maven com.foundationdb:fdb-java:jar:2.0.0
+
+# AWS
+maven com.amazonaws:aws-java-sdk-core:jar:1.9.4
+maven com.amazonaws:aws-java-sdk-s3:jar:1.9.4
+maven com.amazonaws:aws-java-sdk-ec2:jar:1.9.4
 
 #metrics
-maven com.codahale.metrics:metrics-core:jar:3.0.1
+maven com.codahale.metrics:metrics-core:jar:3.0.2
+maven com.codahale.metrics:metrics-graphite:jar:3.0.2
 
 javaVersion 1.6
 
+jar API
 jar Couchbase
 jar Driver
 jar Generator
+jar KVStore
+jar Main
 jar Model
 jar Utils
 jar TapToMQ
 
 jarjar dist/lib/Ziggrid.jar
+  mainClass org.ziggrid.main.Ziggrid
+  resource /API.jar
   resource Couchbase.jar
   resource Driver.jar
   resource Generator.jar
+  resource KVStore.jar
+  resource Main.jar
   resource Model.jar
-  resource Utils.jar
-  resource TapToMQ.jar
+  resource qbout/Utils.jar
+  resource ZinUtils.jar
+    package -x log4j.properties
+    package -x logging.properties
+  resource zincinline.jar
+#   resource TapToMQ.jar
   resource qb/libs/jasypt-1.8.jar
   resource qb/libs/servlet-api.jar
-  resource org.codehaus.jettison:jettison:jar:1.3.1
-  resource org.slf4j:slf4j-api:jar:1.7.5
-  resource org.slf4j:slf4j-log4j12:jar:1.7.5
-  resource log4j:log4j:jar:1.2.17
-  resource woodstox:wstx-asl:jar:3.2.0
-  resource org.codehaus.jackson:jackson-core-asl:jar:1.9.12
-  resource org.slf4j:jul-to-slf4j:jar:1.7.5
-  resource couchbase:couchbase-client:jar:1.1.9
-  resource net.spy:spymemcached:jar:2.9.1
-  resource org.apache.httpcomponents:httpcore:jar:4.2
-  resource commons-codec:commons-codec:jar:1.5
-  resource org.apache.httpcomponents:httpcore-nio:jar:4.1.4
-  resource io.netty:netty:jar:3.5.10.Final
-  resource commons-httpclient:commons-httpclient:jar:3.1
-  resource org.atmosphere:atmosphere-runtime:jar:1.1.0.beta1
-  resource org.slf4j:jcl-over-slf4j:jar:1.7.5
-  resource com.rabbitmq:amqp-client:jar:3.1.4
-  resource com.codahale.metrics:metrics-core:jar:3.0.1
-  resource com.google.guava:guava:jar:14.0.1
+  resource org.codehaus.jettison:jettison:jar
+  resource org.slf4j:slf4j-api:jar
+  resource org.slf4j:slf4j-log4j12:jar
+  resource log4j:log4j:jar
+  resource woodstox:wstx-asl:jar
+    package -x LICENSE
+  resource org.codehaus.jackson:jackson-core-asl:jar
+  resource org.slf4j:jul-to-slf4j:jar
+  resource couchbase:couchbase-client:jar
+  resource net.spy:spymemcached:jar
+  resource org.apache.httpcomponents:httpcore:jar
+  resource commons-codec:commons-codec:jar
+  resource org.apache.httpcomponents:httpcore-nio:jar
+  resource io.netty:netty:jar
+  resource commons-httpclient:commons-httpclient:jar
+  resource org.atmosphere:atmosphere-runtime:jar
+  resource org.slf4j:jcl-over-slf4j:jar
+  resource com.rabbitmq:amqp-client:jar
+  resource com.codahale.metrics:metrics-core:jar
+  resource com.codahale.metrics:metrics-graphite:jar
+  resource com.google.guava:guava:jar
+  resource com.foundationdb
+    package -x LICENSE
 
+jarjar dist/lib/ZiggridMemoryDemo.jar
+  mainClass org.ziggrid.main.ZiggridMemoryDemo
+  resource /API.jar
+  resource Couchbase.jar
+  resource Driver.jar
+  resource Generator.jar
+  resource KVStore.jar
+  resource Main.jar
+  resource Model.jar
+  resource qbout/Utils.jar
+  resource ZinUtils.jar
+  resource zincinline.jar
+#   resource TapToMQ.jar
+  resource qb/libs/jasypt-1.8.jar
+  resource qb/libs/servlet-api.jar
+  resource org.codehaus.jettison:jettison:jar
+  resource org.slf4j:slf4j-api:jar
+  resource org.slf4j:slf4j-log4j12:jar
+  resource log4j:log4j:jar
+  resource woodstox:wstx-asl:jar
+    package -x LICENSE
+  resource org.codehaus.jackson:jackson-core-asl:jar
+  resource org.slf4j:jul-to-slf4j:jar
+  resource couchbase:couchbase-client:jar
+  resource net.spy:spymemcached:jar
+  resource org.apache.httpcomponents:httpcore:jar
+  resource commons-codec:commons-codec:jar
+  resource org.apache.httpcomponents:httpcore-nio:jar
+  resource io.netty:netty:jar
+  resource commons-httpclient:commons-httpclient:jar
+  resource org.atmosphere:atmosphere-runtime:jar
+  resource org.slf4j:jcl-over-slf4j:jar
+  resource com.rabbitmq:amqp-client:jar
+  resource com.codahale.metrics:metrics-core:jar
+  resource com.google.guava:guava:jar
+  resource com.foundationdb
+    package -x LICENSE
+  directory SampleData
+    include buckets/ziggrid-baseball
+    include retrosheet
+  directory ../beane-counter-ui/tmp/public beane-counter-ui
 

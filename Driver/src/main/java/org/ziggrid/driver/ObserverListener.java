@@ -1,10 +1,10 @@
 package org.ziggrid.driver;
 
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import org.zincapi.jsonapi.Payload;
 
 public interface ObserverListener {
 
-	void deliver(Interest i, JSONObject obj) throws JSONException;
+	void deliver(Payload payload);
 
+	void sendError(String msg);
 }

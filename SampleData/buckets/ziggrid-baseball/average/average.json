@@ -3,21 +3,29 @@
     "leaderboard": "average",
     "from": "playerTotals-key2",
     "groupby": [ [], [ "season" ] ],
-    "sortby": [{
-      "op": "ifelse",
-      "test": { "op": "==", "lhs": "atbats", "rhs": 0 },
-      "true": 0,
-      "false": {
-        "op": "/",
-        "lhs": "hits",
-        "rhs": "atbats"
+    "sortby": [
+      {
+        "average":{
+          "op": "ifelse",
+          "test": { "op": "==", "lhs": "atbats", "rhs": 0 },
+          "true": 0.0,
+          "false": {
+            "op": "/",
+            "lhs": "hits",
+            "rhs": "atbats"
+          }
+        }
       }
-    }],
-    "filter": [{
-      "op": ">=",
-      "lhs": "plateAppearances",
-      "rhs": 50
-    }],
+    ],
+    "filter": [
+    {
+      "filter": {
+        "op": ">=",
+        "lhs": "plateAppearances",
+        "rhs": 50
+      }
+     }
+    ],
     "order": "desc",
     "values": [ "player" ]
   },
@@ -25,33 +33,38 @@
     "leaderboard": "production",
     "from": "playerTotals-key2",
     "groupby": [ [], [ "season" ] ],
-    "sortby": [{
-      "op": "ifelse",
-      "test": { "op": "==", "lhs": { "op": "+", "args": [ "atbats", "runnerOn2nd", "runnerOn3rd" ] }, "rhs": 0 },
-      "true": 0,
-      "false": {
-        "op": "/",
-        "lhs": "rbi",
-        "rhs": {
-          "op": "+",
-          "args": [{
+    "sortby": [
+    {
+      "production": {
+        "op": "ifelse",
+        "test": { "op": "==", "lhs": { "op": "+", "args": [ "atbats", "runnerOn2nd", "runnerOn3rd" ] }, "rhs": 0 },
+        "true": 0.0,
+        "false": {
+          "op": "/",
+          "lhs": "rbi",
+          "rhs": {
+            "op": "+",
+            "args": [{
+                "op": "*",
+                "args": [ 0.1, "atbats" ]
+              },{
               "op": "*",
-              "args": [ 0.1, "atbats" ]
-            },{
-            "op": "*",
-            "args": [ 0.8, "runnerOn2nd" ]
-          }, { 
-            "op": "*",
-            "args": [ 1.2, "runnerOn3rd" ]
-          }]
+              "args": [ 0.8, "runnerOn2nd" ]
+            }, { 
+              "op": "*",
+              "args": [ 1.2, "runnerOn3rd" ]
+            }]
+          }
         }
       }
-     }],
-     /* TODO: this should be 3.1 * # games; that requires tracking team's 1st and last game played as yet in playerTotals-key2 */
+    }],
+    /* TODO: this should be 3.1 * # games; that requires tracking team's 1st and last game played as yet in playerTotals-key2 */
     "filter": [{
-      "op": ">=",
-      "lhs": "plateAppearances",
-      "rhs": 50
+      "filter": {
+        "op": ">=",
+        "lhs": "plateAppearances",
+        "rhs": 50
+      }
     }],
     "order": "desc",
     "values": [ "player" ]
@@ -62,10 +75,11 @@
     "groupby": [ [], [ "season" ] ],
     "sortby": [ "hrs" ],
     "filter": [{
+    "filter": {
       "op": ">=",
       "lhs": "plateAppearances",
       "rhs": 50
-    }],
+    }}],
     "order": "desc",
     "values": [ "player" ]
   },

@@ -1,33 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.model.CorrelationDefinition;
-import org.ziggrid.model.Grouping;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
-
-public class CorrelationViewProcessor implements ViewProcessor {
+public class CorrelationViewProcessor { /* implements ViewProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("CorrelationProcessor");
 	private MaterializeObjects materializer;
 	private CorrelationDefinition cd;
@@ -36,8 +9,8 @@ public class CorrelationViewProcessor implements ViewProcessor {
 	private CouchQuery corrQuery;
 	private final Set<List<Object>> allKeys = new LinkedHashSet<List<Object>>();
 	private boolean bumpRequested;
-	private static final Timer correlationProcessorTimer = CodeHaleMetrics.metrics.timer("CorrelationProcessorTimer");
-	private static final Meter correlationProcessorMeter = CodeHaleMetrics.metrics.meter("CorrelationProcessorMeter");
+	private static final Timer correlationProcessorTimer = CodaHaleMetrics.metrics.timer("CorrelationProcessorTimer");
+	private static final Meter correlationProcessorMeter = CodaHaleMetrics.metrics.meter("CorrelationProcessorMeter");
 
 	public CorrelationViewProcessor(CouchQuery globalQuery, CouchQuery corrQuery, MaterializeObjects materializer, CorrelationDefinition cd, Grouping grp) {
 		this.globalQuery = globalQuery;
@@ -74,7 +47,7 @@ public class CorrelationViewProcessor implements ViewProcessor {
 			synchronized (allKeys) {
 				while (allKeys.isEmpty())
 					SyncUtils.waitFor(allKeys, 0);
-				arr = gather(Ziggrid.groupSize);
+				arr = gather(SnapshotViewProcessor.groupSize);
 			}
 			process(arr);
 			
@@ -181,7 +154,7 @@ public class CorrelationViewProcessor implements ViewProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -191,4 +164,5 @@ public class CorrelationViewProcessor implements ViewProcessor {
 			}
 		});
 	}
-}
+*/
+	}

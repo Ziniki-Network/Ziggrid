@@ -1,7 +1,7 @@
 
 package org.ziggrid.model;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class OpReductionWithNoFields implements Reduction {
 	public final String op;

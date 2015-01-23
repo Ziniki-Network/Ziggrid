@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.ziggrid.api.Definition;
+import org.zinutils.utils.PrettyPrinter;
 
 public class EnhancementDefinition implements Definition {
 	public final String from;

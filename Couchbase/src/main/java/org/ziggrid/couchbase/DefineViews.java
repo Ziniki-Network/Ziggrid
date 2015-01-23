@@ -6,10 +6,10 @@ import java.util.Map.Entry;
 import org.apache.commons.httpclient.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ziggrid.api.Definition;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.model.BinaryOperation;
 import org.ziggrid.model.CorrelationDefinition;
-import org.ziggrid.model.Definition;
 import org.ziggrid.model.DoubleConstant;
 import org.ziggrid.model.Enhancement;
 import org.ziggrid.model.EnhancementDefinition;
@@ -24,6 +24,7 @@ import org.ziggrid.model.LeaderboardDefinition;
 import org.ziggrid.model.ListConstant;
 import org.ziggrid.model.MatchField;
 import org.ziggrid.model.Model;
+import org.ziggrid.model.NamedEnhancement;
 import org.ziggrid.model.ObjectDefinition;
 import org.ziggrid.model.OpReductionWithNoFields;
 import org.ziggrid.model.OpReductionWithOneField;
@@ -36,20 +37,20 @@ import org.ziggrid.model.SummaryDefinition;
 import org.ziggrid.parsing.ErrorHandler;
 import org.ziggrid.parsing.JsonReader;
 import org.ziggrid.parsing.ProcessingMethods;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.jsgen.AbstractForStmt;
-import org.ziggrid.utils.jsgen.IfElseStmt;
-import org.ziggrid.utils.jsgen.JSCompiler;
-import org.ziggrid.utils.jsgen.JSExpr;
-import org.ziggrid.utils.jsgen.JSListExpr;
-import org.ziggrid.utils.jsgen.JSParens;
-import org.ziggrid.utils.jsgen.JSValue;
-import org.ziggrid.utils.jsgen.JSVar;
-import org.ziggrid.utils.jsgen.NullExpr;
-import org.ziggrid.utils.jsgen.UseCompiler;
-import org.ziggrid.utils.jsgen.VarDecl;
-import org.ziggrid.utils.sync.SyncUtils;
-import org.ziggrid.utils.utils.FileUtils;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.jsgen.AbstractForStmt;
+import org.zinutils.jsgen.IfElseStmt;
+import org.zinutils.jsgen.JSCompiler;
+import org.zinutils.jsgen.JSExpr;
+import org.zinutils.jsgen.JSListExpr;
+import org.zinutils.jsgen.JSParens;
+import org.zinutils.jsgen.JSValue;
+import org.zinutils.jsgen.JSVar;
+import org.zinutils.jsgen.NullExpr;
+import org.zinutils.jsgen.UseCompiler;
+import org.zinutils.jsgen.VarDecl;
+import org.zinutils.sync.SyncUtils;
+import org.zinutils.utils.FileUtils;
 
 public class DefineViews {
 	private static final Logger logger = LoggerFactory.getLogger("DefineViews");
@@ -181,8 +182,8 @@ public class DefineViews {
 						ifNEq(var("doc").member("ziggridType"), string(l.from)).yes.returnVoid();
 	
 						// Apply any filters before generating row in result view
-						for (Enhancement f : l.filters) {
-							JSExpr expr = doEnhancement(eh, l, this, f);
+						for (NamedEnhancement f : l.filters) {
+							JSExpr expr = doEnhancement(eh, l, this, f.enh);
 							ifFalsy(expr).yes.returnVoid();
 						}
 						
@@ -191,8 +192,8 @@ public class DefineViews {
 						for (String f : grouping.fields) {
 							key.add(var("doc").member(f));
 						}
-						for (Enhancement f : l.sorts) {
-							JSExpr expr = doEnhancement(eh, l, this, f);
+						for (NamedEnhancement f : l.sorts) {
+							JSExpr expr = doEnhancement(eh, l, this, f.enh);
 							key.add(expr);
 						}
 	
@@ -225,8 +226,8 @@ public class DefineViews {
 							ifFalsy(var("doc").member("ziggridType")).yes.returnVoid();
 							ifNEq(var("doc").member("ziggridType"), string(cd.from)).yes.returnVoid();
 							JSListExpr key = list();
-							for (Enhancement f : cd.items) {
-								JSExpr expr = doEnhancement(eh, cd, this, f);
+							for (NamedEnhancement f : cd.items) {
+								JSExpr expr = doEnhancement(eh, cd, this, f.enh);
 								key.add(expr);
 							}
 							voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
@@ -249,8 +250,8 @@ public class DefineViews {
 							for (String f : grouping.fields) {
 								key.add(var("doc").member(f));
 							}
-							for (Enhancement f : cd.items) {
-								JSExpr expr = doEnhancement(eh, cd, this, f);
+							for (NamedEnhancement f : cd.items) {
+								JSExpr expr = doEnhancement(eh, cd, this, f.enh);
 								key.add(expr);
 							}
 							voidFunction("emit", key, doEnhancement(eh, cd, this, cd.value));
@@ -279,16 +280,16 @@ public class DefineViews {
 
 						// build a key
 						JSListExpr key = list();
-						for (Enhancement f : sd.group) {
-							JSExpr expr = doEnhancement(eh, sd, this, f);
+						for (NamedEnhancement f : sd.group) {
+							JSExpr expr = doEnhancement(eh, sd, this, f.enh);
 							key.add(expr);
 						}
-						key.add(doEnhancement(eh, sd, this, sd.upTo));
+						key.add(doEnhancement(eh, sd, this, sd.upTo.enh));
 
 						// build a value
 						JSListExpr value = list();
-						for (Enhancement v : sd.values) {
-							value.add(doEnhancement(eh, sd, this, v));
+						for (NamedEnhancement v : sd.values) {
+							value.add(doEnhancement(eh, sd, this, v.enh));
 						}
 						voidFunction("emit", key, value);
 					}

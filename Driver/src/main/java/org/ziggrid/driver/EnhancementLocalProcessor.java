@@ -1,32 +1,11 @@
 package org.ziggrid.driver;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.Enhancement;
-import org.ziggrid.model.EnhancementDefinition;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-
-public class EnhancementLocalProcessor implements LocalProcessor {
+public class EnhancementLocalProcessor { /*implements LocalProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("EnhancementProcessor");
 	private final MaterializeObjects materializer;
 	private final EnhancementDefinition defn;
-	private static final Timer enhancementProcessorTimer = CodeHaleMetrics.metrics.timer("EnhancementProcessorTimer");
-	private static final Meter enhancementProcessorMeter = CodeHaleMetrics.metrics.meter("EnhancementProcessorMeter");
+	private static final Timer enhancementProcessorTimer = CodaHaleMetrics.metrics.timer("EnhancementProcessorTimer");
+	private static final Meter enhancementProcessorMeter = CodaHaleMetrics.metrics.meter("EnhancementProcessorMeter");
 	private final Map<String, JSONObject> allEntries = new HashMap<String, JSONObject>();
 	private final LinkedHashSet<String> linkedKeys = new LinkedHashSet<String>();
 	private final EnhancementVM enhancer = new EnhancementVM();
@@ -112,7 +91,7 @@ public class EnhancementLocalProcessor implements LocalProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -122,5 +101,6 @@ public class EnhancementLocalProcessor implements LocalProcessor {
 			}
 		});
 	}
+*/
 }
 

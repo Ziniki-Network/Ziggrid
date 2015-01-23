@@ -5,10 +5,11 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ziggrid.api.Definition;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.collections.CollectionUtils;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.collections.CollectionUtils;
+import org.zinutils.utils.PrettyPrinter;
 
 public class LeaderboardDefinition implements Definition {
 	private static final Logger logger = LoggerFactory.getLogger("LeaderboardDefinition");
@@ -17,8 +18,8 @@ public class LeaderboardDefinition implements Definition {
 	private final String entryName;
 	public final String from;
 	private final List<Grouping> groups = new ArrayList<Grouping>();
-	public final List<Enhancement> sorts = new ArrayList<Enhancement>();
-	public final List<Enhancement> filters = new ArrayList<Enhancement>();
+	public final List<NamedEnhancement> sorts = new ArrayList<NamedEnhancement>();
+	public final List<NamedEnhancement> filters = new ArrayList<NamedEnhancement>();
 	public final List<String> values = new ArrayList<String>();
 	public int top;
 	public boolean ascending;
@@ -51,11 +52,11 @@ public class LeaderboardDefinition implements Definition {
 		model.add(eh, docId, entry);
 	}
 
-	public void sortBy(Enhancement enhancement) {
+	public void sortBy(NamedEnhancement enhancement) {
 		sorts.add(enhancement);
 	}
 
-	public void filter(Enhancement enhancement) {
+	public void filter(NamedEnhancement enhancement) {
 		filters.add(enhancement);
 	}
 
@@ -95,18 +96,8 @@ public class LeaderboardDefinition implements Definition {
 			
 			ObjectDefinition u = model.getModel(eh, getEntryName(grp));
 			if (u == null) throw new ZiggridException("Couldn't find my own entry class");
-			int fno = 0;
-			for (Enhancement c : this.sorts) {
-				if (c instanceof FieldEnhancement) {
-					String fname = ((FieldEnhancement)c).field;
-					if (about.getField(fname) == null)
-						eh.report(this, "There is no field " + fname + " in " + from);
-					else
-						u.addField(new FieldDefinition(fname, about.getField(fname).type, false));
-				} else {
-					logger.error("Don't have a field name for enhancement " + c);
-					u.addField(new FieldDefinition("f" + (++fno), "number", false));
-				}
+			for (NamedEnhancement c : this.sorts) {
+				u.addField(c.fieldDefinition(about));
 			}
 			for (String c : this.values)
 				if (about.getField(c) == null)
@@ -130,9 +121,9 @@ public class LeaderboardDefinition implements Definition {
 			pp.append(";");
 			pp.requireNewline();
 		}
-		for (Enhancement s : sorts) {
+		for (NamedEnhancement s : sorts) {
 			pp.append("sort by ");
-			s.prettyPrint(pp);
+			s.enh.prettyPrint(pp);
 			pp.append(";");
 			pp.requireNewline();
 		}

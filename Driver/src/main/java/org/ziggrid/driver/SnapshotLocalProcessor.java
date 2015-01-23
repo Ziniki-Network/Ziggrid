@@ -1,34 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import net.spy.memcached.CASResponse;
-import net.spy.memcached.CASValue;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.Enhancement;
-import org.ziggrid.model.FieldEnhancement;
-import org.ziggrid.model.SnapshotDefinition;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.couchbase.client.CouchbaseClient;
-
-public class SnapshotLocalProcessor implements LocalProcessor {
+public class SnapshotLocalProcessor { /* implements LocalProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("SnapshotProcessor");
 	private final MaterializeObjects materializer;
 	private final SnapshotDefinition sd;
@@ -37,22 +9,18 @@ public class SnapshotLocalProcessor implements LocalProcessor {
 	private final LinkedHashSet<List<Object>> linkedKeys = new LinkedHashSet<List<Object>>();
 	private final EnhancementVM enhancer = new EnhancementVM();
 	private final CouchbaseClient conn;
-	private static final Timer snapshotProcessorTimer = CodeHaleMetrics.metrics.timer("SnapshotProcessorTimer");
-	private static final Meter snapshotProcessorMeter = CodeHaleMetrics.metrics.meter("SnapshotProcessorMeter");
+	private static final Timer snapshotProcessorTimer = CodaHaleMetrics.metrics.timer("SnapshotProcessorTimer");
+	private static final Meter snapshotProcessorMeter = CodaHaleMetrics.metrics.meter("SnapshotProcessorMeter");
 	private final String upTo;
 
 	public SnapshotLocalProcessor(CouchbaseClient conn, MaterializeObjects materializer, SnapshotDefinition sd) {
 		this.conn = conn;
 		this.materializer = materializer;
 		this.sd = sd;
-		for (Enhancement expr : sd.group){
-			if (!(expr instanceof FieldEnhancement))
-				throw new ZiggridException("That is not yet supported");
-			keyFields.add(((FieldEnhancement)expr).field);
+		for (NamedEnhancement expr : sd.group){
+			keyFields.add(expr.name);
 		}
-		if (!(sd.upTo instanceof FieldEnhancement))
-			throw new ZiggridException("That is not yet supported");
-		upTo = ((FieldEnhancement)sd.upTo).field;
+		upTo = sd.upTo.name;
 		keyFields.add(upTo);
 		createMetrics();
 	}
@@ -143,16 +111,19 @@ public class SnapshotLocalProcessor implements LocalProcessor {
 					int line = o.getInt(upTo);
 					recomputeFor.add(line);
 					JSONObject factor = new JSONObject();
-					for (int x = 0; x<sd.valueFields.size();x++) {
-						factor.put(sd.valueFields.get(x), enhancer.process(sd.values.get(x), o));
+					for (NamedEnhancement enh : sd.values) {
+						factor.put(enh.name, enhancer.process(enh.enh, o));
 					}
 					factors.put(Integer.toString(line), factor);
 				}
 				
 				// Recalculate affected items
 //				logger.info("Recomputing for key " + jk.toString() + " with rcf = " + recomputeFor);
+				List<String> valueFields = new ArrayList<String>();
+				for (NamedEnhancement s : sd.values)
+					valueFields.add(s.name);
 				for (int endAt : recomputeFor) {
-					materializer.materializeSnapshotObject(sd, keyFields, sd.valueFields, (int) sd.startFrom(endAt), endAt, sd.getViewName(), jk.toString(), factors);
+					materializer.materializeSnapshotObject(sd, keyFields, valueFields, (int) sd.startFrom(endAt), endAt, sd.getViewName(), jk.toString(), factors);
 				}
 				
 				// Save to Couchbase
@@ -198,7 +169,7 @@ public class SnapshotLocalProcessor implements LocalProcessor {
 			} catch (JSONException ex) {
 				ex.printStackTrace();
 			}
-			*/
+			* /
 		snapshotProcessorContext.stop();
 		snapshotProcessorMeter.mark(1);
 	}
@@ -217,7 +188,7 @@ public class SnapshotLocalProcessor implements LocalProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -227,4 +198,5 @@ public class SnapshotLocalProcessor implements LocalProcessor {
 			}
 		});
 	}
+	*/
 }

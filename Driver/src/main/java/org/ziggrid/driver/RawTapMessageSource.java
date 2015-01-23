@@ -1,19 +1,6 @@
 package org.ziggrid.driver;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import net.spy.memcached.tapmessage.ResponseMessage;
-
-import org.ziggrid.taptomq.TapDataPacket;
-import org.ziggrid.utils.exceptions.UtilException;
-
-import com.couchbase.client.TapClient;
-
-public class RawTapMessageSource implements MessageSource {
+public class RawTapMessageSource { /*implements MessageSource {
 
 	private TapClient tap;
 	private String couchUrl;
@@ -63,4 +50,4 @@ public class RawTapMessageSource implements MessageSource {
 		if (tap != null)
 			tap.shutdown();
 	}
-}
+*/}

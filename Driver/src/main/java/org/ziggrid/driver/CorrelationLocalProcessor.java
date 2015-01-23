@@ -1,38 +1,7 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
-import net.spy.memcached.CASResponse;
-import net.spy.memcached.CASValue;
-import net.spy.memcached.internal.GetFuture;
-import net.spy.memcached.internal.OperationFuture;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.CorrelationDefinition;
-import org.ziggrid.model.Enhancement;
-import org.ziggrid.model.Grouping;
-import org.ziggrid.utils.collections.CircularList;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.couchbase.client.CouchbaseClient;
-
-public class CorrelationLocalProcessor implements LocalProcessor {
+public class CorrelationLocalProcessor { /* implements LocalProcessor {
 	public enum ProcState { NEEDGET, WAITGET, WAITSAVE, COMPLETE };
 	
 	public class ItemProcessor {
@@ -100,8 +69,8 @@ public class CorrelationLocalProcessor implements LocalProcessor {
 				for (JSONObject o : entries) {
 					JSONArray corr = new JSONArray();
 					try {
-						for (Enhancement e : cd.items)
-							corr.put(enhancer.process(e, o));
+						for (NamedEnhancement e : cd.items)
+							corr.put(enhancer.process(e.enh, o));
 						String corrS = corr.toString();
 						Object v = enhancer.process(cd.value, o);
 						double value;
@@ -186,8 +155,8 @@ public class CorrelationLocalProcessor implements LocalProcessor {
 	private final EnhancementVM enhancer = new EnhancementVM();
 	private CircularList<ItemProcessor> active = new CircularList<ItemProcessor>(50);
 	private int activeProcessors = 0;
-//	private static final Timer correlationProcessorTimer = CodeHaleMetrics.metrics.timer("CorrelationProcessorTimer");
-//	private static final Meter correlationProcessorMeter = CodeHaleMetrics.metrics.meter("CorrelationProcessorMeter");
+//	private static final Timer correlationProcessorTimer = CodaHaleMetrics.metrics.timer("CorrelationProcessorTimer");
+//	private static final Meter correlationProcessorMeter = CodaHaleMetrics.metrics.meter("CorrelationProcessorMeter");
 	private final int poolSize;
 	private final int poolId;
 	private boolean needGlobalRefresh = false;
@@ -385,7 +354,7 @@ public class CorrelationLocalProcessor implements LocalProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -395,4 +364,5 @@ public class CorrelationLocalProcessor implements LocalProcessor {
 			}
 		});
 	}
+*/
 }

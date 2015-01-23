@@ -8,23 +8,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 
+import org.ziggrid.api.Definition;
+import org.ziggrid.api.IModel;
 import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.CompositeDefinition.ValueField;
 import org.ziggrid.model.ObjectDefinition.KeyElement;
 import org.ziggrid.model.ObjectDefinition.KeyField;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.graphs.DirectedAcyclicGraph;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.collections.ListMap;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.graphs.DirectedAcyclicGraph;
+import org.zinutils.graphs.Link;
+import org.zinutils.graphs.Node;
+import org.zinutils.utils.Crypto;
+import org.zinutils.utils.PrettyPrinter;
 
-public class Model {
+public class Model implements IModel {
 	public final ListMap<String, Definition> definitions = new ListMap<String, Definition>();
 	private final Map<String,String> shas = new HashMap<String, String>();
 	private Set<Definition> validated = new HashSet<Definition>();
 	public final DirectedAcyclicGraph<Definition> dag = new DirectedAcyclicGraph<Definition>();
 	private boolean validating = false;
+	private Set<String> restrictedWatchables;
+
+	@Override
+	public boolean restrictionIncludes(String name) {
+		return restrictedWatchables == null || restrictedWatchables.contains(name);
+	}
 
 	public void setSHA1(String docId, String hash) {
 		if (shas.containsKey(docId))
@@ -36,10 +47,22 @@ public class Model {
 		return shas.containsKey(s) && shas.get(s).equals(sha);
 	}
 
+	@Override
 	public String getSHA(String doc) {
 		return shas.get(doc);
 	}
 
+	public String shaFor(Definition d) {
+		return shaFor(d, "");
+	}
+	
+	public String shaFor(Definition d, String variation) {
+		PrettyPrinter pp = new PrettyPrinter();
+		d.prettyPrint(pp);
+		pp.append(variation);
+		return Crypto.hash(pp.toString());
+	}
+	
 	public void add(ErrorHandler eh, String docId, Definition od) {
 		if (od == null)
 			return;
@@ -354,13 +377,27 @@ public class Model {
 				if (from.getField(field) == null)
 					eh.report(d, "The type " + d.from + " has no field " + field);
 			}
-		for (ValueField vf : d.fields) {
-			if (into.getField(vf.key) == null)
-				eh.report(d, "The type " + d.into + " has no field " + vf.key);
-			FieldEnhancement fe = (FieldEnhancement) vf.value;
-			if (from.getField(fe.field) == null)
-				eh.report(d, "The type " + d.from + " has no field " + fe.field);
+		for (NamedEnhancement vf : d.fields) {
+			if (into.getField(vf.name) == null)
+				eh.report(d, "The type " + d.into + " has no field " + vf.name);
+			validateOperation(eh, d, from, vf.enh);
 		}
+	}
+
+	@Override
+	public Set<Definition> willProcess(String type) {
+		// TODO Auto-generated method stub
+		ErrorHandler eh = new ErrorHandler();
+		ObjectDefinition d = getModel(eh, type);
+		if (d == null)
+			throw new UtilException("Could not find definition for " + type);
+		Node<Definition> node = dag.find(d);
+		Set<Link<Definition>> linksTo = node.linksTo();
+		Set<Definition> ret = new HashSet<Definition>();
+		for (Link<Definition> l : linksTo) {
+			ret.add(l.getFromNode().getEntry());
+		}
+		return ret;
 	}
 
 	@Override
@@ -372,4 +409,37 @@ public class Model {
 		return sb.toString();
 	}
 
+	public void selectProcessorsFor(String want) {
+		if (restrictedWatchables == null)
+			restrictedWatchables = new TreeSet<String>();
+		for (Definition d : findProcessorsFor(want)) {
+			if (d instanceof ObjectDefinition)
+				restrictedWatchables.add(((ObjectDefinition)d).name);
+		}
+	}
+
+	private List<Definition> findProcessorsFor(String want) {
+		Definition d = null;
+		for (String doc : documents()) {
+			for (Definition q : definitions.get(doc))
+				if (q instanceof ObjectDefinition && ((ObjectDefinition)q).name.equals(want)) {
+					d = q;
+					break;
+				}
+		}
+		if (d == null)
+			throw new UtilException("There is no definition for " + want);
+		List<Definition> ret = new ArrayList<Definition>();
+		Node<Definition> n = dag.find(d);
+		traverse(ret, n);
+		return ret;
+	}
+
+	private void traverse(List<Definition> ret, Node<Definition> n) {
+		if (ret.contains(n.getEntry()))
+			return;
+		ret.add(n.getEntry());
+		for (Link<Definition> l :  n.linksFrom())
+			traverse(ret, l.getToNode());
+	}
 }

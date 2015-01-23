@@ -9,12 +9,12 @@ import java.util.List;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.ziggrid.api.Definition;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.model.BinaryOperation;
 import org.ziggrid.model.CompositeDefinition;
 import org.ziggrid.model.CorrelationDefinition;
 import org.ziggrid.model.Decay;
-import org.ziggrid.model.Definition;
 import org.ziggrid.model.DoubleConstant;
 import org.ziggrid.model.Enhancement;
 import org.ziggrid.model.EnhancementDefinition;
@@ -28,6 +28,7 @@ import org.ziggrid.model.LeaderboardDefinition;
 import org.ziggrid.model.LinearDecay;
 import org.ziggrid.model.ListConstant;
 import org.ziggrid.model.Model;
+import org.ziggrid.model.NamedEnhancement;
 import org.ziggrid.model.ObjectDefinition;
 import org.ziggrid.model.OpReductionWithNoFields;
 import org.ziggrid.model.OpReductionWithOneField;
@@ -37,10 +38,10 @@ import org.ziggrid.model.StringConstant;
 import org.ziggrid.model.StringContainsOp;
 import org.ziggrid.model.SumOperation;
 import org.ziggrid.model.SummaryDefinition;
-import org.ziggrid.utils.collections.CollectionUtils;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.utils.Crypto;
-import org.ziggrid.utils.utils.FileUtils;
+import org.zinutils.collections.CollectionUtils;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.utils.Crypto;
+import org.zinutils.utils.FileUtils;
 
 // TODO:
 // 1. Start handling errors properly VERY SOON
@@ -167,7 +168,27 @@ public class JsonReader {
 		return od;
 	}
 
-	public Enhancement readEnhancement(ErrorHandler eh, Definition d, Object f) throws JSONException {
+	public NamedEnhancement readNamedEnhancement(ErrorHandler eh, Definition d, Object f) throws JSONException {
+		if (f == null)
+			return null; // error propagation ... avoid cascading
+		else if (f instanceof String) {
+			String fn = (String)f;
+			return new NamedEnhancement(fn, new FieldEnhancement(fn));
+		} else if (f instanceof JSONObject) {
+			JSONObject obj = (JSONObject) f;
+			if (obj.length() != 1) {
+				eh.report(d, "There are multiple keys in field enhancement: " + obj);
+				return null;
+			}
+			String fn = (String) obj.keys().next();
+			return new NamedEnhancement(fn, readEnhancement(eh, d, obj.get(fn)));
+		} else {
+			eh.report(d, "Invalid named enhancement definition: " + f);
+			return null;
+		}
+	}
+
+	private Enhancement readEnhancement(ErrorHandler eh, Definition d, Object f) throws JSONException {
 		Enhancement enhancement = null;
 		if (f == null)
 			return null; // error propagation ... avoid cascading
@@ -331,14 +352,14 @@ public class JsonReader {
 		}
 		JSONArray sorts = obj.getJSONArray("sortby");
 		for (int i=0;i<sorts.length();i++)
-			ret.sortBy(readEnhancement(eh, ret, sorts.get(i)));
+			ret.sortBy(readNamedEnhancement(eh, ret, sorts.get(i)));
 		JSONArray values = obj.getJSONArray("values");
 		for (int i=0;i<values.length();i++)
 			ret.returnValue(values.getString(i));
 		if (obj.has("filter")) {
 			JSONArray filters = obj.getJSONArray("filter");
 			for (int i=0;i<filters.length();i++)
-				ret.filter(readEnhancement(eh, ret, filters.get(i)));
+				ret.filter(readNamedEnhancement(eh, ret, filters.get(i)));
 		}
 		return ret;
 	}
@@ -349,7 +370,7 @@ public class JsonReader {
 		ret.useValue(readEnhancement(eh, ret, obj.get("value")));
 		JSONArray cases = obj.getJSONArray("case");
 		for (int i=0;i<cases.length();i++) {
-			ret.addCaseItem(readEnhancement(eh, ret, cases.get(i)));
+			ret.addCaseItem(readNamedEnhancement(eh, ret, cases.get(i)));
 		}
 		// TODO: we should check these are distinct
 		JSONArray groups = obj.getJSONArray("groupby");
@@ -368,16 +389,14 @@ public class JsonReader {
 		SnapshotDefinition ret = new SnapshotDefinition(eh, model, docId, obj.getString("snapshot"), obj.getString("from"));
 		JSONArray grps = obj.getJSONArray("groupby");
 		for (int i=0;i<grps.length();i++) {
-			ret.groupBy(readEnhancement(eh, ret, grps.get(i)));
+			ret.groupBy(readNamedEnhancement(eh, ret, grps.get(i)));
 		}
-		ret.upTo(readEnhancement(eh, ret, obj.get("upTo")));
+		ret.upTo(readNamedEnhancement(eh, ret, obj.get("upTo")));
 		if (obj.has("decay"))
 			ret.decay(parseDecay(eh, ret, obj.getJSONObject("decay")));
-		JSONObject values = obj.getJSONObject("values");
-		Iterator<?> it = values.keys();
-		while (it.hasNext()) {
-			String s = (String) it.next();
-			ret.value(s, readEnhancement(eh, ret, values.get(s)));
+		JSONArray values = obj.getJSONArray("values");
+		for (int i=0;i<values.length();i++) {
+			ret.value(readNamedEnhancement(eh, ret, values.get(i)));
 		}
 		return ret;
 	}
@@ -414,13 +433,9 @@ public class JsonReader {
 			} else
 				eh.report(ret, "Cannot have key member " + ki);
 		}
-		JSONObject fields = obj.getJSONObject("fields");
-		@SuppressWarnings("unchecked")
-		Iterator<String> it = fields.keys();
-		while (it.hasNext()) {
-			String f = it.next();
-			Enhancement v = readEnhancement(eh, ret, fields.get(f));
-			ret.addField(f, v);
+		JSONArray fields = obj.getJSONArray("fields");
+		for (int i=0;i<fields.length();i++) {
+			ret.addField(readNamedEnhancement(eh, ret, fields.get(i)));
 		}
 		return ret;
 	}

@@ -1,24 +1,27 @@
 package org.ziggrid.generator.provider;
 
-import java.util.List;
-
-import org.ziggrid.generator.main.AnalyticItem;
+import org.ziggrid.api.TickUpdate;
 import org.ziggrid.generator.main.Timer;
+import org.ziggrid.model.Model;
 
 public interface Factory {
 
-	public abstract int nextId();
+	public abstract String nextId();
 
 	public abstract int endAt();
 
-	public abstract String getBucket();
-
-	public abstract String couchUrl();
-
 	public abstract void prepareRun();
 
-	public abstract List<AnalyticItem> doTick(Timer timer);
+	public abstract TickUpdate doTick(Timer timer);
 
 	public abstract void close();
+
+	public abstract Model getModel();
+	
+	public void setPosition(short unique, int outOf, int mod);
+
+	public abstract int getId();
+
+	public abstract int getCurrentPosition();
 
 }

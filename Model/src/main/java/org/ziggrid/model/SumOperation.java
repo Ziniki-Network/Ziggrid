@@ -3,7 +3,7 @@ package org.ziggrid.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class SumOperation implements Enhancement {
 	public final List<Enhancement> args = new ArrayList<Enhancement>();

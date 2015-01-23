@@ -1,54 +1,23 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.Enhancement;
-import org.ziggrid.model.FieldEnhancement;
-import org.ziggrid.model.SnapshotDefinition;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.ViewResponse;
-
-public class SnapshotViewProcessor implements ViewProcessor {
+public class SnapshotViewProcessor { /*implements ViewProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("SnapshotProcessor");
 	private final CouchQuery query;
-	private final MaterializeObjects materializer;
 	private final SnapshotDefinition sd;
 	private final List<String> keyFields = new ArrayList<String>();
 	private final Set<List<Object>> allKeys = new LinkedHashSet<List<Object>>();
 	private boolean bumpRequested;
-	private static final Timer snapshotProcessorTimer = CodeHaleMetrics.metrics.timer("SnapshotProcessorTimer");
-	private static final Meter snapshotProcessorMeter = CodeHaleMetrics.metrics.meter("SnapshotProcessorMeter");
+	private static final Timer snapshotProcessorTimer = CodaHaleMetrics.metrics.timer("SnapshotProcessorTimer");
+	private static final Meter snapshotProcessorMeter = CodaHaleMetrics.metrics.meter("SnapshotProcessorMeter");
+	static final int groupSize = 50;
 
 	public SnapshotViewProcessor(CouchQuery query, MaterializeObjects materializer, SnapshotDefinition sd) {
 		this.query = query;
-		this.materializer = materializer;
 		this.sd = sd;
-		for (Enhancement expr : sd.group){
-			if (!(expr instanceof FieldEnhancement))
-				throw new ZiggridException("That is not yet supported");
-			keyFields.add(((FieldEnhancement)expr).field);
+		for (NamedEnhancement expr : sd.group){
+			keyFields.add(expr.name);
 		}
-		if (!(sd.upTo instanceof FieldEnhancement))
-			throw new ZiggridException("That is not yet supported");
-		keyFields.add(((FieldEnhancement)sd.upTo).field);
+		keyFields.add(sd.upTo.name);
 		createMetrics();
 	}
 	
@@ -77,7 +46,7 @@ public class SnapshotViewProcessor implements ViewProcessor {
 			synchronized (allKeys) {
 				while (allKeys.isEmpty())
 					SyncUtils.waitFor(allKeys, 0);
-				arr = gather(Ziggrid.groupSize);
+				arr = gather(groupSize);
 			}
 			process(arr);
 			
@@ -134,7 +103,7 @@ public class SnapshotViewProcessor implements ViewProcessor {
 				start.put(start.length()-1, sd.startFrom(endAt));
 				q.setRange(start.toString(), end.toString());
 				
-				ViewResponse resp = query.query(q);
+//				ViewResponse resp = query.query(q);
 //				materializer.materializeSnapshotObject(sd, keyFields, sd.valueFields, endAt, query.getViewName(), end.toString(), resp);
 			} catch (JSONException ex) {
 				ex.printStackTrace();
@@ -159,7 +128,7 @@ public class SnapshotViewProcessor implements ViewProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -169,4 +138,4 @@ public class SnapshotViewProcessor implements ViewProcessor {
 			}
 		});
 	}
-}
+*/}

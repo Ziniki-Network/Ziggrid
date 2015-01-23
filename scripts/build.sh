@@ -10,4 +10,6 @@ case `uname -s` in
      ;;
 esac
 
-java -cp "$CLASSPATH$SEP$ROOTDIR/Quickbuilder.jar" com.gmmapowell.quickbuild.app.QuickBuild "$@" qb/ziggrid.qb
+cp ../ZinUtils/ZinUtils/qbout/ZinUtils.jar qb/libs
+cp ../zinclib/dist/lib/zincinline.jar qb/libs
+java -cp "$CLASSPATH$SEP$ROOTDIR/Quickbuilder.jar" com.gmmapowell.quickbuild.app.QuickBuild --no-home "$@" qb/ziggrid.qb

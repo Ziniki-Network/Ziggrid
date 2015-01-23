@@ -1,29 +1,7 @@
 package org.ziggrid.taptomq;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import net.spy.memcached.tapmessage.ResponseMessage;
-
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.utils.exceptions.UtilException;
-
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.CouchbaseConnectionFactory;
-import com.couchbase.client.CouchbaseConnectionFactoryBuilder;
-import com.couchbase.client.TapClient;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
-public class TapObserver implements Runnable {
+public class TapObserver { /* implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger("Observer");
 	private CouchbaseClient conn;
 	private TapClient tap;
@@ -171,4 +149,4 @@ public class TapObserver implements Runnable {
 		}
 
 	}
-}
+*/}

@@ -7,15 +7,14 @@ import java.util.Date;
 import java.util.List;
 
 import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import org.ziggrid.api.AnalyticItem;
+import org.ziggrid.api.StoreableObject;
 import org.ziggrid.generator.baseball.InningState.RunnerAdvances;
-import org.ziggrid.generator.main.AnalyticItem;
-import org.ziggrid.utils.csv.CSVLine;
-import org.ziggrid.utils.exceptions.UtilException;
-
-import com.couchbase.client.CouchbaseClient;
+import org.zinutils.csv.CSVLine;
+import org.zinutils.exceptions.UtilException;
 
 public class Game {
+	String gameid;
 	String visteam;
 	String hometeam;
 	private GameIterator it;
@@ -27,12 +26,13 @@ public class Game {
 	private int homeRuns;
 	private List<AnalyticItem> allItems = new ArrayList<AnalyticItem>();
 	private SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+	private List<StoreableObject> players = new ArrayList<StoreableObject>();
 
 	// for unit tests
 	Game() {
 	}
 
-	public Game(GameIterator it, CouchbaseClient conn) {
+	public Game(GameIterator it) {
 		this.it = it;
 		while (true) {
 			CSVLine l = it.nextLine();
@@ -41,6 +41,7 @@ public class Game {
 			String cmd = l.get(0);
 			String opt = l.get(1);
 			if (cmd.equals("id")) {
+				gameid = opt;
 				season = opt.substring(3, 7);
 			} else if (cmd.equals("version")) {
 				if (!opt.equals("2"))
@@ -64,24 +65,23 @@ public class Game {
 				}
 			} else if (cmd.equals("start")) {
 				playerId(l.get(1), l.get(3));
-				if (conn != null)
-					try {
-						conn.add("player/" + l.get(1), 0, newProfile(l.get(1), l.get(2)));
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
+				try {
+					players.add(newProfile(season, l.get(1), l.get(2)));
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
 			} else
 				break;
 			it.usedLine();
 		}
 	}
 
-	private String newProfile(String evCode, String fullName) throws JSONException {
-		JSONObject ret = new JSONObject();
-		ret.put("ziggridType", "profile");
-		ret.put("player", evCode);
-		ret.put("fullname", fullName);
-		return ret.toString();
+	private StoreableObject newProfile(String season, String evCode, String fullName) throws JSONException {
+		AnalyticItem ret = new AnalyticItem("rosterPlayer", it.root.nextId(), it.timer.notch());
+		ret.set("season", season);
+		ret.set("player", evCode);
+		ret.set("fullname", fullName);
+		return ret;
 	}
 
 	private void playerId(String id, String team) {
@@ -133,7 +133,12 @@ public class Game {
 					throw new UtilException("We lost track of the inning");
 				else if (play.get(2).equals("1") != state.half)
 					throw new UtilException("We lost track of the half-inning");
-				AnalyticItem ai = new AnalyticItem(it.root, it.timer, "plateAppearance");
+				String outcome = parseAction(play.get(6), state);
+				if (outcome == null)
+					continue;
+				found = true;
+
+				AnalyticItem ai = new AnalyticItem("plateAppearance", it.root.nextId(), it.timer.notch());
 				ai.set("season", season);
 				ai.set("dayOfYear", gameDate);
 				ai.set("inning", play.get(1));
@@ -144,11 +149,6 @@ public class Game {
 				ai.set("bases", (state.bases[1]?"1":"")+(state.bases[2]?"2":"")+(state.bases[3]?"3":""));
 				ai.set("awayScore", awayRuns);
 				ai.set("homeScore", homeRuns);
-				String outcome = parseAction(play.get(6), state);
-				if (outcome == null)
-					continue;
-
-				found = true;
 				ai.set("action", outcome);
 				ai.set("rbi", state.rbi);
 				allItems.add(ai);
@@ -158,6 +158,7 @@ public class Game {
 					awayRuns += state.runs;
 			} catch (Exception ex) {
 				BaseballFactory.logger.error(ex.getMessage());
+				BaseballFactory.logger.info("Recovering after failure in parsing " + play);
 				recoveryMode = true;
 			}
 		}
@@ -503,7 +504,7 @@ public class Game {
 	}
 	
 	public void reportDate() {
-		AnalyticItem ai = new AnalyticItem(it.root, it.timer, "gameDate");
+		AnalyticItem ai = new AnalyticItem("gameDate", it.root.nextId(), it.timer.notch());
 		ai.set("season", season);
 		ai.set("day", gameDate);
 		allItems.add(ai);
@@ -512,7 +513,7 @@ public class Game {
 	public void addTeamEvents() {
 		if (winningTeam == null)
 			throw new UtilException("No winning team was determined");
-		AnalyticItem ai = new AnalyticItem(it.root, it.timer, "gameResult");
+		AnalyticItem ai = new AnalyticItem("gameResult", it.root.nextId(), it.timer.notch());
 		ai.set("season", season);
 		ai.set("day", gameDate);
 		if (winningTeam.equals("1")) {
@@ -527,5 +528,14 @@ public class Game {
 			ai.set("loseruns", homeRuns);
 		}
 		allItems.add(ai);
+	}
+
+	public List<StoreableObject> players() {
+		return players;
+	}
+	
+	@Override
+	public String toString() {
+		return gameDate + " " + visteam + " " + hometeam;
 	}
 }

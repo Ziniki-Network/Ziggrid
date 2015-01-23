@@ -3,9 +3,10 @@ package org.ziggrid.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.ziggrid.api.Definition;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.collections.CollectionUtils;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.collections.CollectionUtils;
+import org.zinutils.utils.PrettyPrinter;
 
 public class IndexDefinition implements Definition {
 	private final String viewName;

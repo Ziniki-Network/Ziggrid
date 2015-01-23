@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class ListConstant implements Enhancement, Iterable<Object> {
 	public final List<Object> values = new ArrayList<Object>();

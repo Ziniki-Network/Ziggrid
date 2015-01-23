@@ -10,16 +10,19 @@ import org.atmosphere.cpr.AtmosphereHandler;
 import org.atmosphere.cpr.AtmosphereRequest;
 import org.atmosphere.cpr.AtmosphereResource;
 import org.atmosphere.cpr.AtmosphereResourceEvent;
-import org.ziggrid.generator.main.ZigGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zinutils.exceptions.UtilException;
 
 public class AnalyticHandler implements AtmosphereHandler {
+	public static Logger logger = LoggerFactory.getLogger("AnalyticHandler");
 	private final Map<HttpSession, WebSocketSender> conns = new HashMap<HttpSession, WebSocketSender>();
 	
 	@Override
 	public void onRequest(AtmosphereResource resource) throws IOException {
 		AtmosphereRequest request = resource.getRequest();
 		HttpSession session = resource.session();
-		ZigGenerator.logger.info("Received " + request.getMethod() + " from session " + session);
+		logger.info("Received " + request.getMethod() + " from session " + session);
 		if (request.getMethod().equalsIgnoreCase("get"))
 		{
 			// initiating the channel
@@ -29,17 +32,19 @@ public class AnalyticHandler implements AtmosphereHandler {
 		} else if (request.getMethod().equalsIgnoreCase("post")) {
 			WebSocketSender sender = conns.get(session);
 			if (sender == null)
-				ZigGenerator.logger.severe("There is no generator for session");
+				logger.error("There is no generator for session");
 			else {
-				ZigGenerator.logger.info("Starting generator");
-				final ZigGenerator tmp = new ZigGenerator(AnalyticServer.realtime, AnalyticServer.delay, 0, AnalyticServer.config, sender);
+				throw new UtilException("We used to start the generator here, but that has a dependency issue ... but I don't think it's the right approach anyway");
+				/*
+				logger.info("Starting generator");
+				final ZigGenerator tmp = new ZigGenerator(AnalyticServer.realtime, AnalyticServer.delay, 0, XML.fromContainer(AnalyticServer.config), sender, null);
 				tmp.setEndTime(-1);
 				new Thread() {
 					public void run() {
 						tmp.doAll();
 					}
 				}.start();
-				sender.setGenerator(tmp);
+				*/
 			}
 		}
 	}
@@ -48,12 +53,12 @@ public class AnalyticHandler implements AtmosphereHandler {
 	public void onStateChange(AtmosphereResourceEvent ev) throws IOException {
 		if (ev.getResource().isCancelled()) {
 			HttpSession session = ev.getResource().session();
-			ZigGenerator.logger.info("Closing connection for " + session);
+			logger.info("Closing connection for " + session);
 			WebSocketSender sender = conns.get(session);
 			if (sender == null)
-				ZigGenerator.logger.severe("There is no generator for session");
+				logger.error("There is no generator for session");
 			else {
-				ZigGenerator.logger.info("Stopping generator");
+				logger.info("Stopping generator");
 				sender.close();
 			}
 		}

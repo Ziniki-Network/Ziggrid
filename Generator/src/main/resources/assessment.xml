@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+
+<Config factory='org.ziggrid.generator.assessment.AssessmentFactory' couchUrl='http://mollie3:8091/' bucket='assessment' endAt='10'>
+	<Professor name='A'>
+		<Course name='A.1' every='3'/>
+	</Professor>
+	<Professor name='B'>
+		<Course name='B.1' every='2' count='2'/>
+	</Professor>
+	<Student name='lazy' always='10' variable='30' ttamin='0' ttavar='3' accuracy='45' />
+	<Student name='eager' always='0' variable='1' ttamin='0' ttavar='1' accuracy='80' />
+	<Student name='average' always='0' variable='4' ttamin='0' ttavar='2' accuracy='60' />
+</Config>

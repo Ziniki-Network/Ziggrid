@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+
+<Config factory='org.ziggrid.generator.baseball.BaseballFactory' >
+    <!--
+    <Directory directory='../SampleData/retrosheet' pattern='*.EVN.csv' />
+    <Directory directory='../SampleData/retrosheet' pattern='*.EVA.csv' />
+    -->
+    <Resource resource='retrosheet' pattern='*.EVN.csv' />
+    <Resource resource='retrosheet' pattern='*.EVA.csv' />
+</Config>

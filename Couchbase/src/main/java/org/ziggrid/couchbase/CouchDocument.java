@@ -14,7 +14,7 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ziggrid.utils.exceptions.UtilException;
+import org.zinutils.exceptions.UtilException;
 
 public class CouchDocument {
 	Logger logger = LoggerFactory.getLogger("CouchDocument");

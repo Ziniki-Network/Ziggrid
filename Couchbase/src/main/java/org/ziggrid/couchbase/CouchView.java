@@ -6,12 +6,12 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.jsgen.JSBuilder;
-import org.ziggrid.utils.jsgen.JSEntry;
-import org.ziggrid.utils.jsgen.JSFile;
-import org.ziggrid.utils.jsgen.JSFunction;
-import org.ziggrid.utils.jsgen.JSVar;
+import org.zinutils.exceptions.UtilException;
+import org.zinutils.jsgen.JSBuilder;
+import org.zinutils.jsgen.JSEntry;
+import org.zinutils.jsgen.JSFile;
+import org.zinutils.jsgen.JSFunction;
+import org.zinutils.jsgen.JSVar;
 
 public class CouchView {
 	private final static Logger logger = LoggerFactory.getLogger("CouchView");

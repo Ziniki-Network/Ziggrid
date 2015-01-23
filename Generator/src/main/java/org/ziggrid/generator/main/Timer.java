@@ -1,42 +1,9 @@
 package org.ziggrid.generator.main;
 
-import org.ziggrid.utils.utils.StringUtil;
+import org.ziggrid.api.Tick;
+import org.ziggrid.api.Timestamp;
 
 public class Timer {
-	public class Tick {
-		private final int when;
-
-		public Tick(int when) {
-			this.when = when;
-		}
-
-		@Override
-		public String toString() {
-			return "["+StringUtil.digits(when/1000, 6) + ".---"+"]";
-		}
-	}
-
-	public final static class Timestamp {
-		private final int when;
-
-		public Timestamp(int when) {
-			this.when = when;
-		}
-		
-		public int wholes() {
-			return when/1000; 
-		}
-		
-		public int millis() {
-			return when%1000;
-		}
-
-		@Override
-		public String toString() {
-			return "["+StringUtil.digits(when/1000, 6) + "."+StringUtil.digits(when%1000, 3)+"]";
-		}
-	}
-
 	private final boolean realtime;
 	private int current;
 

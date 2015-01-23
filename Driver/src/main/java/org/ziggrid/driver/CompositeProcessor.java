@@ -1,35 +1,13 @@
 package org.ziggrid.driver;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
-import net.spy.memcached.CASResponse;
-import net.spy.memcached.CASValue;
-
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.model.CompositeDefinition;
-import org.ziggrid.model.CompositeDefinition.ValueField;
-import org.ziggrid.model.FieldEnhancement;
-import org.ziggrid.model.ObjectDefinition.KeyElement;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.exceptions.UtilException;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.couchbase.client.CouchbaseClient;
-
-public class CompositeProcessor implements LocalProcessor {
+public class CompositeProcessor { /*implements LocalProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("CompositeProcessor");
 	private final CouchbaseClient conn;
 	private final CompositeDefinition defn;
 	private final ListMap<String, JSONObject> allEntries = new ListMap<String, JSONObject>();
 	private final LinkedHashSet<String> linkedKeys = new LinkedHashSet<String>();
+	private final EnhancementVM evm = new EnhancementVM();
 
 	public CompositeProcessor(CouchbaseClient conn, CompositeDefinition defn) {
 		this.conn = conn;
@@ -101,13 +79,9 @@ public class CompositeProcessor implements LocalProcessor {
 				}			
 
 				for (JSONObject event : events) {
-					for (ValueField f : defn.fields) {
+					for (NamedEnhancement f : defn.fields) {
 						try {
-							if (f.value instanceof FieldEnhancement) {
-								String v = ((FieldEnhancement)f.value).field;
-								s.put(f.key, event.get(v));
-							} else
-								logger.error("Cannot handle enhancement " + f.value + " in Composite processing");
+							s.put(f.name, evm.process(f.enh, event));
 						} catch (JSONException ex) {
 							ex.printStackTrace();
 						}
@@ -149,7 +123,7 @@ public class CompositeProcessor implements LocalProcessor {
 	}
 
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
                 new Gauge<Integer>() {
 		            @Override
 		            public Integer getValue() {
@@ -159,4 +133,5 @@ public class CompositeProcessor implements LocalProcessor {
 		            }
 		        });
 	}
+	*/
 }

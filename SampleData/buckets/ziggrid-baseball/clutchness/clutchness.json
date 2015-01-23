@@ -1,18 +1,20 @@
 [
+  /*
   {
     "leaderboard": "clutchness",
     "from": "correlate_on_situation_groupedBy_player",
     "groupby": [ [] ],
     "sortby": [ "correlation" ],
     "filter": [{
+      "filter": {
       "op": ">=",
       "lhs": "count",
       "rhs": 15
+      }
     }],
     "order": "desc",
     "values": [ "player" ]
   },
-  /*
   {
     "index": "clutchnessToDate",
     "from": "snapshot_clutchnessSeasonToDate",
@@ -25,10 +27,14 @@
     "from": "correlate_on_situation_groupedBy_player_and_season",
     "key": [
       "player/",
+      { "field": "season" },
+      "/",
       { "field": "player" }
     ],
-    "fields": {
-      "clutchness": "correlation"
-    }
+    "fields": [
+      "player",
+      "season",
+      { "clutchness": "correlation" }
+    ]
   },
 ]

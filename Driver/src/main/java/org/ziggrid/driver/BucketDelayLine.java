@@ -12,11 +12,11 @@ import java.util.TreeMap;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.collections.SetMap;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-import org.ziggrid.utils.utils.DateUtils;
+import org.zinutils.collections.ListMap;
+import org.zinutils.collections.SetMap;
+import org.zinutils.metrics.CodaHaleMetrics;
+import org.zinutils.sync.SyncUtils;
+import org.zinutils.utils.DateUtils;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
@@ -24,8 +24,8 @@ import com.codahale.metrics.Timer;
 public class BucketDelayLine<K,V> {
 	private static final Logger logger = LoggerFactory.getLogger("Observer");
 	
-	private static final Meter entryProcessMeter = CodeHaleMetrics.metrics.meter("EntryProcessMeter");
-	private static final Timer bucketProcessTimer = CodeHaleMetrics.metrics.timer("BucketProcessTimer");
+	private static final Meter entryProcessMeter = CodaHaleMetrics.metrics.meter("EntryProcessMeter");
+	private static final Timer bucketProcessTimer = CodaHaleMetrics.metrics.timer("BucketProcessTimer");
 
 	public interface Processor<T1, T2> {
 		void spill(T1 k, Set<T2> set);

@@ -3,15 +3,24 @@ package org.ziggrid.generator.out.json;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
-import org.ziggrid.generator.main.AnalyticItem;
-import org.ziggrid.generator.main.ZigGenerator;
-import org.ziggrid.generator.out.AnalyticStore;
-import org.ziggrid.generator.provider.Factory;
-import org.ziggrid.utils.exceptions.UtilException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.ziggrid.api.AnalyticItem;
+import org.ziggrid.api.ExistingObjectProvider;
+import org.ziggrid.api.IInterestEngine;
+import org.ziggrid.api.IModel;
+import org.ziggrid.api.StorageEngine;
+import org.ziggrid.api.StoreableObject;
+import org.ziggrid.api.TickUpdate;
+import org.ziggrid.config.StorageConfig;
+import org.zinutils.collections.ListMap;
+import org.zinutils.exceptions.UtilException;
 
-public class FileOutput implements AnalyticStore {
+public class FileOutput implements StorageEngine {
+	public static Logger logger = LoggerFactory.getLogger("ZigGenerator");
 	private FileWriter writer;
 	private boolean havePrev = false;
 
@@ -27,26 +36,38 @@ public class FileOutput implements AnalyticStore {
 	}
 
 	@Override
-	public void open(Factory f) {
+	public void open(IInterestEngine engine, IModel model, StorageConfig storage) {
 		try {
 			writer.append("[");
 		} catch (IOException ex) {
 			throw UtilException.wrap(ex);
 		}
 	}
+
+	@Override
+	public short unique() {
+		return 0;
+	}
+
+	@Override
+	public StoreableObject findExisting(ListMap<String, ? extends ExistingObjectProvider> processors, String tlc, Map<String, Object> options) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 	@Override
-	public void push(List<AnalyticItem> toSave) {
-		for (AnalyticItem ai : toSave) {
+	public boolean push(TickUpdate toSave) {
+		for (AnalyticItem ai : toSave.items) {
 			try {
 				if (havePrev) writer.write(",");
 				writer.append('\n');
-				writer.append(ai.asJson());
+				writer.append(ai.asJsonString());
 				havePrev = true;
 			} catch (Exception ex) {
-				ZigGenerator.logger.severe(ex.getMessage());
+				logger.error(ex.getMessage());
 			}
 		}
+		return true;
 	}
 
 	@Override
@@ -61,9 +82,20 @@ public class FileOutput implements AnalyticStore {
 	}
 
 	@Override
-	public void setGenerator(ZigGenerator gen) {
+	public void recordServer(String string, JSONObject obj) {
 		// TODO Auto-generated method stub
 		
 	}
 
+	@Override
+	public void syncTo(int id, int currentPosition) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean has(String gameId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

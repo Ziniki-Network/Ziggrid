@@ -208,14 +208,39 @@
     ]
   },
   {
+    "name": "rosterPlayer",
+    "fields": [
+      {
+        "name": "player", // player id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season", // Year represented as YYYY
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "fullname", // player real first name
+        "type": "string"
+      }
+    ]
+  },
+  {
     "name": "profile",
     "key": [
       "player/",
+      { "field": "season" },
       { "field": "player" }
     ],
     "fields": [
       {
         "name": "player", // player id
+        "type": "string",
+        "key": true
+      },
+      {
+        "name": "season", // Year represented as YYYY
         "type": "string",
         "key": true
       },
@@ -370,6 +395,7 @@
     ]
   },
   // enhance plateAppearance => paOutcome
+  // all the actions I'm aware of: [1B, 2B, 3B, BB, CI, DP, E, F, FC, G, HBP, HR, K, L, P, SB, SF]
   {
     "enhanced": "paOutcome",
     "from": "plateAppearance",
@@ -404,7 +430,7 @@
         "test": {
           "op": "in",
           "field": "action",
-          "strings": ["1B","2B","3B","HR","G","F","P","K"]
+          "strings": ["1B","2B","3B","DP","E","F","FC","G","HR","K","L","P"]
         },
         "true": { "number": 1 },
         "false": { "number": 0 }
@@ -593,10 +619,10 @@
     "snapshot": "clutchnessSeasonToDate",
     "from": "correlate_on_situation_groupedBy_player_season_and_dayOfYear",
     "groupby": [ "player", "season" ],
-    "upTo": "dayOfYear",
-    "values": {
-     "correlation" : "correlation"
-    }
+    "upTo": { "dayOfYear": "dayOfYear" },
+    "values": [
+     { "correlation" : "correlation" }
+    ]
   },
   /* Calculate a decaying average over the season of the last 20 atbats.
    * Use this to measure the current "hotness" of a hitter
@@ -610,7 +636,7 @@
       "method": "linear",
       "expiry": 20
     },
-    "values": {
+    "values": [{
       "average" : {
         "op": "/",
         "lhs": {
@@ -649,20 +675,39 @@
         },
         "rhs": 2.0
       }
-    }
+    }]
+  },
+  {
+    "composeInto": "profile",
+    "from": "rosterPlayer",
+    "key": [
+      "player/",
+      { "field": "season" },
+      "/",
+      { "field": "player" }
+    ],
+    "fields": [
+      "player",
+      "season",
+      "fullname"
+    ]
   },
   {
     "composeInto": "profile",
     "from": "playerTotals-key2",
     "key": [
       "player/",
+      { "field": "season" },
+      "/",
       { "field": "player" }
     ],
-    "fields": {
-      "atbats": "atbats",
-      "hits": "hits",
-      "walks": "walks",
-      "hrs": "hrs"
-    }
+    "fields": [
+      "player",
+      "season",
+      "atbats",
+      "hits",
+      "walks",
+      "hrs"
+    ]
   },
 ]

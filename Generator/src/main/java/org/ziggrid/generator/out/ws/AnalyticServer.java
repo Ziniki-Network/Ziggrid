@@ -2,8 +2,8 @@ package org.ziggrid.generator.out.ws;
 
 import java.io.File;
 
-import org.ziggrid.utils.http.GPServletDefn;
-import org.ziggrid.utils.http.InlineServer;
+import org.zinutils.http.ISServletDefn;
+import org.zinutils.http.InlineServer;
 
 public class AnalyticServer extends Thread {
 	private InlineServer server;
@@ -46,7 +46,7 @@ public class AnalyticServer extends Thread {
 
 	@Override
 	public void run() {
-		GPServletDefn servlet = server.getBaseServlet();
+		ISServletDefn servlet = server.getBaseServlet();
 		servlet.setContextPath("/analytic");
 		servlet.setServletPath("/server");
 		servlet.addClassDir(new File("."));

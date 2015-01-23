@@ -1,53 +1,53 @@
 package org.ziggrid.generator.out.json;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import net.spy.memcached.internal.OperationFuture;
-
-import org.codehaus.jettison.json.JSONException;
-import org.ziggrid.generator.main.AnalyticItem;
-import org.ziggrid.generator.main.HasCouchConn;
-import org.ziggrid.generator.main.ZigGenerator;
-import org.ziggrid.generator.out.AnalyticStore;
-import org.ziggrid.generator.provider.Factory;
-import org.ziggrid.utils.exceptions.UtilException;
-
-import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.CouchbaseConnectionFactory;
-import com.couchbase.client.CouchbaseConnectionFactoryBuilder;
-
-public class LoadCouchbase implements AnalyticStore, HasCouchConn {
+public class LoadCouchbase { /* implements StorageEngine {
+	public static Logger logger = LoggerFactory.getLogger("ZigGenerator");
 	private CouchbaseClient conn;
-	private ZigGenerator gen;
 	private List<OperationFuture<Boolean>> prev = new ArrayList<OperationFuture<Boolean>>();
 
 	@Override
-	public void open(Factory f) {
+	public void open(IInterestEngine engine, IModel model, StorageConfig storage) {
 		try {
-			URI server = new URI(f.couchUrl()+"pools");
-			List<URI> serverList = new ArrayList<URI>();
-			serverList.add(server);
-			CouchbaseConnectionFactoryBuilder builder = new CouchbaseConnectionFactoryBuilder();
-			builder.setOpTimeout(30000);
-			builder.setTimeoutExceptionThreshold(30000);
-			CouchbaseConnectionFactory ccf = builder.buildCouchbaseConnection(serverList, f.getBucket(), "");
-			conn = new CouchbaseClient(ccf);
+//			URI server = new URI(f.couchUrl()+"pools");
+//			List<URI> serverList = new ArrayList<URI>();
+//			serverList.add(server);
+//			CouchbaseConnectionFactoryBuilder builder = new CouchbaseConnectionFactoryBuilder();
+//			builder.setOpTimeout(30000);
+//			builder.setTimeoutExceptionThreshold(30000);
+//			CouchbaseConnectionFactory ccf = builder.buildCouchbaseConnection(serverList, f.getBucket(), "");
+//			conn = new CouchbaseClient(ccf);
 		} catch (Exception ex) {
 			throw UtilException.wrap(ex);
 		}
 	}
 
 	@Override
-	public void push(List<AnalyticItem> toSave) {
+	public short unique() {
+		return 0;
+	}
+
+	@Override
+	public StoreableObject findExisting(ListMap<String, ? extends ExistingObjectProvider> processors, String tlc, Map<String, Object> options) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean push(TickUpdate toSave) {
 		List<OperationFuture<Boolean>> ops = new ArrayList<OperationFuture<Boolean>>();
-		for (AnalyticItem ai : toSave) {
+		for (Entry<String, StoreableObject> x : toSave.updates.entrySet()) {
 			try {
-				ops.add(conn.set(ai.id(), 0, ai.asJson()));
+				ops.add(conn.set(x.getKey(), 0, x.getValue().asJsonString()));
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		for (AnalyticItem ai : toSave.items) {
+			try {
+				ops.add(conn.set(ai.id(), 0, ai.asJsonString()));
 			} catch (JSONException ex) {
-				ZigGenerator.logger.severe(ex.getMessage());
+				logger.error(ex.getMessage());
 			}
 		}
 		try {
@@ -61,6 +61,7 @@ public class LoadCouchbase implements AnalyticStore, HasCouchConn {
 		} catch (Exception ex) {
 			throw UtilException.wrap(ex);
 		}
+		return true;
 	}
 
 	@Override
@@ -69,12 +70,18 @@ public class LoadCouchbase implements AnalyticStore, HasCouchConn {
 	}
 
 	@Override
-	public void setGenerator(ZigGenerator gen) {
-		this.gen = gen;
+	public void recordServer(String id, JSONObject obj) {
+		conn.set(id, 0, obj.toString());
 	}
 
 	@Override
-	public CouchbaseClient getConnection() {
-		return conn;
+	public void syncTo(int id, int currentPosition) {
+		throw new NotImplementedException();
 	}
+
+	@Override
+	public boolean has(String gameId) {
+		throw new NotImplementedException();
+	}
+*/
 }

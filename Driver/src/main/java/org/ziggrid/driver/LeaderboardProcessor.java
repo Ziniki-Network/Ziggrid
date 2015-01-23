@@ -1,30 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.model.Grouping;
-import org.ziggrid.model.LeaderboardDefinition;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.Stale;
-import com.couchbase.client.protocol.views.ViewResponse;
-
-public class LeaderboardProcessor implements ViewProcessor {
+public class LeaderboardProcessor { /* implements ViewProcessor {
 	private static final Logger logger = LoggerFactory.getLogger("LeaderboardProcessor");
 	private final CouchQuery query;
 	private final MaterializeObjects materializer;
@@ -32,8 +8,8 @@ public class LeaderboardProcessor implements ViewProcessor {
 	private final Grouping grouping;
 	private final Set<List<Object>> allKeys = new LinkedHashSet<List<Object>>();
 	private boolean bumpRequested;
-	private static final Timer leaderboardProcessorTimer = CodeHaleMetrics.metrics.timer("LeaderboardProcessorTimer");
-	private static final Meter leaderboardProcessorMeter = CodeHaleMetrics.metrics.meter("LeaderboardProcessorMeter");
+	private static final Timer leaderboardProcessorTimer = CodaHaleMetrics.metrics.timer("LeaderboardProcessorTimer");
+	private static final Meter leaderboardProcessorMeter = CodaHaleMetrics.metrics.meter("LeaderboardProcessorMeter");
 
 	public LeaderboardProcessor(CouchQuery query, MaterializeObjects materializer, LeaderboardDefinition defn, Grouping grouping) {
 		this.query = query;
@@ -68,7 +44,7 @@ public class LeaderboardProcessor implements ViewProcessor {
 			synchronized (allKeys) {
 				while (allKeys.isEmpty())
 					SyncUtils.waitFor(allKeys, 0);
-				arr = gather(Ziggrid.groupSize);
+				arr = gather(SnapshotViewProcessor.groupSize);
 			}
 			process(arr);
 
@@ -158,7 +134,7 @@ public class LeaderboardProcessor implements ViewProcessor {
 	}
 	
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
 				new Gauge<Integer>() {
 			@Override
 			public Integer getValue() {
@@ -168,4 +144,5 @@ public class LeaderboardProcessor implements ViewProcessor {
 			}
 		});
 	}
-}
+*/
+	}

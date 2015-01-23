@@ -3,9 +3,9 @@ package org.ziggrid.generator.baseball;
 import java.util.Iterator;
 
 import org.ziggrid.generator.main.Timer;
-import org.ziggrid.utils.csv.CSVLine;
-import org.ziggrid.utils.csv.CSVReader;
-import org.ziggrid.utils.exceptions.UtilException;
+import org.zinutils.csv.CSVLine;
+import org.zinutils.csv.CSVReader;
+import org.zinutils.exceptions.UtilException;
 
 public class GameIterator implements Iterator<Game> {
 	BaseballFactory root;
@@ -28,9 +28,8 @@ public class GameIterator implements Iterator<Game> {
 			CSVLine nextLine = nextLine();
 			if (nextLine == null)
 				return false;
-//			BaseballFactory.logger.info(nextLine.get(0));
 			if (nextLine.get(0).equals("id")) {
-				pending = new Game(this, root.conn);
+				pending = new Game(this);
 				return true;
 			}
 			usedLine();
@@ -39,14 +38,11 @@ public class GameIterator implements Iterator<Game> {
 
 	@Override
 	public Game next() {
-		if (pending != null) {
-			Game p = pending;
-			pending = null;
-			return p;
-		}
-		if (!hasNext())
+		if (!hasNext() || pending == null)
 			throw new IndexOutOfBoundsException("There are no more games");
-		return new Game(this, root.conn);
+		Game ret = pending;
+		pending = null;
+		return ret;
 	}
 
 	@Override

@@ -3,8 +3,8 @@ package org.ziggrid.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
-import org.ziggrid.utils.utils.StringUtil;
+import org.zinutils.utils.PrettyPrinter;
+import org.zinutils.utils.StringUtil;
 
 public class Grouping {
 	public final List<String> fields;

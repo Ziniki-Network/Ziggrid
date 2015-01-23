@@ -1,6 +1,6 @@
 package org.ziggrid.model;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class MatchField {
 	public final String summaryField;
@@ -12,11 +12,12 @@ public class MatchField {
 	}
 
 	public void prettyPrint(PrettyPrinter pp) {
-		pp.append(summaryField);
-		pp.append(" == ");
-		pp.append(eventField);
+		pp.append(toString());
 		pp.append(";");
 		pp.requireNewline();
 	}
 
+	public String toString() {
+		return summaryField + " == " + eventField;
+	}
 }

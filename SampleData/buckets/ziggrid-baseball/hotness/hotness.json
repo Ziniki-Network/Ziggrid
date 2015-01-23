@@ -3,6 +3,7 @@
  * enable the model reader to identify the definition type.
  */
 [
+  /*
   {
     "leaderboard": "hotness",
     "from": "snapshot_playerSeasonToDate",
@@ -11,7 +12,6 @@
     "order": "desc",
     "values": [ "player" ]
   },
-  /*
   {
     "index": "hotness",
     "from": "snapshot_playerSeasonToDate",
@@ -24,10 +24,14 @@
     "from": "snapshot_playerSeasonToDate",
     "key": [
       "player/",
+      { "field": "season" },
+      "/",
       { "field": "player" }
     ],
-    "fields": {
-      "hotness": "average"
-    }
+    "fields": [
+      "player",
+      "season",
+      { "hotness": "average" }
+    ]
   }
 ]

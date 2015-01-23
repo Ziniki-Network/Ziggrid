@@ -5,9 +5,10 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ziggrid.api.Definition;
 import org.ziggrid.exceptions.ZiggridException;
 import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class CorrelationDefinition implements Definition {
 	private static final Logger logger = LoggerFactory.getLogger("CorrelationDefinition");
@@ -16,7 +17,7 @@ public class CorrelationDefinition implements Definition {
 	public final String name;
 	private final String globalView;
 	public Enhancement value;
-	public final List<Enhancement> items = new ArrayList<Enhancement>();
+	public final List<NamedEnhancement> items = new ArrayList<NamedEnhancement>();
 	private final List<Grouping> groups = new ArrayList<Grouping>();
 
 	public CorrelationDefinition(String docId, String name) {
@@ -35,7 +36,7 @@ public class CorrelationDefinition implements Definition {
 		this.value = value;
 	}
 
-	public void addCaseItem(Enhancement item) {
+	public void addCaseItem(NamedEnhancement item) {
 		items.add(item);
 	}
 
@@ -70,14 +71,8 @@ public class CorrelationDefinition implements Definition {
 			int fno = 0;
 			for (String s : grp.fields)
 				u.addField(new FieldDefinition(s, about.getField(s).type, true));
-			for (Enhancement c : this.items) {
-				if (c instanceof FieldEnhancement) {
-					String fname = ((FieldEnhancement)c).field;
-					u.addField(new FieldDefinition(fname, about.getField(fname).type, true));
-				} else {
-					logger.error("Don't have a field name for enhancement " + c);
-					u.addField(new FieldDefinition("f" + (++fno), "number", false));
-				}
+			for (NamedEnhancement c : this.items) {
+				u.addField(c.fieldDefinition(about));
 			}
 			u.addField(new FieldDefinition("correlation", "number", false));
 		}
@@ -101,9 +96,9 @@ public class CorrelationDefinition implements Definition {
 		}
 		pp.append("divide into cases on ");
 		String sep = "";
-		for (Enhancement s : items) {
+		for (NamedEnhancement s : items) {
 			pp.append(sep);
-			s.prettyPrint(pp);
+			s.enh.prettyPrint(pp);
 			sep = ", ";
 		}
 		pp.append(";");

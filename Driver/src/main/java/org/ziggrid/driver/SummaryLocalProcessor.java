@@ -1,40 +1,6 @@
 package org.ziggrid.driver;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import net.spy.memcached.CASResponse;
-import net.spy.memcached.CASValue;
-import net.spy.memcached.internal.OperationFuture;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.ziggrid.exceptions.ZiggridException;
-import org.ziggrid.model.FieldDefinition;
-import org.ziggrid.model.MatchField;
-import org.ziggrid.model.Model;
-import org.ziggrid.model.ObjectDefinition;
-import org.ziggrid.model.OpReductionWithNoFields;
-import org.ziggrid.model.OpReductionWithOneField;
-import org.ziggrid.model.Reduction;
-import org.ziggrid.model.SummaryDefinition;
-import org.ziggrid.parsing.ErrorHandler;
-import org.ziggrid.utils.collections.CircularList;
-import org.ziggrid.utils.collections.ListMap;
-import org.ziggrid.utils.metrics.CodeHaleMetrics;
-import org.ziggrid.utils.sync.SyncUtils;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.couchbase.client.CouchbaseClient;
-
-public class SummaryLocalProcessor implements LocalProcessor {
+public class SummaryLocalProcessor { /*implements LocalProcessor {
 	public class SummaryState {
 		private int grp;
 		private String storeType;
@@ -364,7 +330,7 @@ public class SummaryLocalProcessor implements LocalProcessor {
 	}
 
 	private void createMetrics() {
-		CodeHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
+		CodaHaleMetrics.metrics.register(MetricRegistry.name(this.toThreadName() + "-EntryGauge"),
                 new Gauge<Integer>() {
 		            @Override
 		            public Integer getValue() {
@@ -374,4 +340,5 @@ public class SummaryLocalProcessor implements LocalProcessor {
 		            }
 		        });
 	}
-}
+*/
+	}

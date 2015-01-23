@@ -1,6 +1,6 @@
 package org.ziggrid.model;
 
-import org.ziggrid.utils.utils.PrettyPrinter;
+import org.zinutils.utils.PrettyPrinter;
 
 public class StringContainsOp implements Enhancement {
 	public final String field;
